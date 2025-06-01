@@ -61,13 +61,30 @@ def load_parent_store(jsonl_path: Path) -> InMemoryStore:
 
 
 def _rerank(query: str, docs: List[Document]) -> Tuple[List[Document], List[float]]:
-    """Cross-Encoder 점수로 재정렬"""
-    passages = [d.page_content for d in docs]
-    pairs = [[query, passage] for passage in passages]
-    scores = reranker.score(pairs)
-    ranked = sorted(zip(docs, scores), key=lambda t: t[1], reverse=True)
-    docs_sorted, scores_sorted = zip(*ranked)
-    return list(docs_sorted), list(scores_sorted)
+    """Cross-Encoder 점수로 재정렬 - 디버깅 로그 추가"""
+    print(f"🔄 Starting reranking with {len(docs)} documents...")
+
+    try:
+        passages = [d.page_content for d in docs]
+        print(f"   Extracted {len(passages)} passages")
+
+        pairs = [[query, passage] for passage in passages]
+        print(f"   Created {len(pairs)} query-passage pairs")
+
+        print(f"   Using reranker: {config.RERANKER_NAME}")
+        scores = reranker.score(pairs)
+        print(f"   ✅ Reranker scores computed: {scores}")
+
+        ranked = sorted(zip(docs, scores), key=lambda t: t[1], reverse=True)
+        docs_sorted, scores_sorted = zip(*ranked)
+
+        print(f"   ✅ Reranking completed successfully")
+        return list(docs_sorted), list(scores_sorted)
+
+    except Exception as e:
+        print(f"   ❌ Error in _rerank: {e}")
+        print(f"   Error type: {type(e).__name__}")
+        raise e
 
 
 def retrieve_from_file_embedding(
@@ -297,48 +314,123 @@ def retrieve_from_img_embedding(
 
 
 def vectordb_retrieve(query: HumanMessage | str) -> List[Document]:
-    """기본 벡터 DB 검색 - 반환값 일관성 수정"""
+    """기본 벡터 DB 검색 - 상세한 디버깅 로그 추가"""
+    print(f"🔍 Starting vectordb_retrieve with query: {query}")
+
     try:
+        # Step 1: Query 변환
+        print("📝 Step 1: Converting query to text...")
         query_text = query.content if hasattr(query, "content") else query
+        print(f"   Query text: '{query_text}' (type: {type(query_text)})")
+
+        # Step 2: Vector DB 로딩
+        print("📂 Step 2: Loading vector database...")
+        print(f"   DB path: {config.CONTENT_DB_PATH}")
+        print(f"   Path exists: {config.CONTENT_DB_PATH.exists()}")
+
+        if not config.CONTENT_DB_PATH.exists():
+            raise FileNotFoundError(
+                f"Vector database not found at {config.CONTENT_DB_PATH}"
+            )
 
         vectordb = FAISS.load_local(
             config.CONTENT_DB_PATH,
             embeddings=embeddings,
             allow_dangerous_deserialization=True,
         )
+        print(f"   ✅ Vector DB loaded successfully")
+        print(f"   DB info: {len(vectordb.docstore._dict)} documents in store")
 
+        # Step 3: Query 임베딩 생성
+        print("🔢 Step 3: Generating query embedding...")
         query_emb = model.encode(
             query_text,
             convert_to_tensor=False,
             normalize_embeddings=True,
         )
+        print(f"   ✅ Query embedding shape: {query_emb.shape}")
+        print(f"   Embedding dtype: {query_emb.dtype}")
 
+        # Step 4: 유사도 검색
+        print(f"🔍 Step 4: Performing similarity search (TOP_K={config.TOP_K})...")
         sem = vectordb.similarity_search_by_vector(query_emb, k=config.TOP_K)
+        print(f"   ✅ Found {len(sem)} documents")
+
+        if not sem:
+            print("   ⚠️ Warning: No documents found in similarity search")
+            return []
+
+        # 검색 결과 미리보기
+        for i, doc in enumerate(sem[:2]):  # 첫 2개 문서만 미리보기
+            preview = (
+                doc.page_content[:100] + "..."
+                if len(doc.page_content) > 100
+                else doc.page_content
+            )
+            print(f"   Doc {i+1} preview: {preview}")
+
+        # Step 5: 문서 임베딩 생성
+        print("🔢 Step 5: Generating document embeddings...")
+        doc_contents = [d.page_content for d in sem]
+        print(f"   Processing {len(doc_contents)} document contents")
 
         doc_vecs = model.encode(
-            [d.page_content for d in sem],
+            doc_contents,
             convert_to_tensor=False,
             normalize_embeddings=True,
         )
+        print(f"   ✅ Document embeddings shape: {doc_vecs.shape}")
 
+        # Step 6: 코사인 유사도 계산
+        print("📊 Step 6: Computing cosine similarity...")
         cos_sim = util.cos_sim(query_emb, doc_vecs)[0].float().cpu().numpy()
+        print(f"   ✅ Similarity scores: {cos_sim}")
+        print(f"   Max score: {cos_sim.max():.4f}, Min score: {cos_sim.min():.4f}")
 
-        # 출력 디렉토리 생성 확인
+        # Step 7: 출력 디렉토리 확인 및 점수 저장
+        print("💾 Step 7: Saving similarity scores...")
         output_dir = Path(config.OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
+        print(f"   Output directory: {output_dir}")
 
         with open(config.SAVE_PATH, "w", encoding="utf-8") as f:
             json.dump(cos_sim.tolist(), f, ensure_ascii=False)
+        print(f"   ✅ Scores saved to: {config.SAVE_PATH}")
 
-        # 조건부로 reranking 적용
+        # Step 8: Reranking (선택적)
         if config.RERANK:
-            reranked_docs, scores = _rerank(query_text, sem)
-            return reranked_docs
+            print("🔄 Step 8: Applying reranking...")
+            try:
+                reranked_docs, scores = _rerank(query_text, sem)
+                print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+                print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+                return reranked_docs
+            except Exception as rerank_error:
+                print(f"   ❌ Reranking failed: {rerank_error}")
+                print(f"   Falling back to original results")
+                return sem
+        else:
+            print("⏭️ Step 8: Skipping reranking (disabled)")
 
+        print("✅ vectordb_retrieve completed successfully")
         return sem
 
+    except FileNotFoundError as e:
+        print(f"❌ FileNotFoundError in vectordb_retrieve: {e}")
+        print(f"   Check if vector database exists at: {config.CONTENT_DB_PATH}")
+        return []
+
     except Exception as e:
-        print(f"Error in vectordb_retrieve: {e}")
+        print(f"❌ Unexpected error in vectordb_retrieve: {e}")
+        print(f"   Error type: {type(e).__name__}")
+        print(f"   Error details: {str(e)}")
+
+        # 스택 트레이스 출력
+        import traceback
+
+        print("📋 Full traceback:")
+        traceback.print_exc()
+
         return []
 
 

@@ -1,9 +1,9 @@
 # Environment variables
 .env
 *.env
+.env.example
 
 # Output directories
-output/
 logs/
 temp/
 
