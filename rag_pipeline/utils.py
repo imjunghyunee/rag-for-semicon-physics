@@ -195,3 +195,56 @@ def build_payload_for_llm_answer(query_text: str, context: str) -> dict:
         "n": 1,
     }
     return payload
+
+
+def build_payload_for_complexity_check(query_text: str) -> dict:
+    """Determine if the question requires simple retrieval or complex multi-hop reasoning."""
+    payload = {
+        "model": config.REMOTE_LLM_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": """You are a helpful assistant that generates answers based on the provided question and context.""",
+            },
+            {
+                "role": "user",
+                "content": f"[Question]:{query_text}, [Context]:{context}",
+            },
+        ],
+        "max_tokens": 5000,
+        "temperature": 0.5,
+        "top_p": 0.95,
+        "stream": False,
+        "n": 1,
+    }
+    return payload
+
+
+def build_payload_for_complexity_check(query_text: str) -> dict:
+    """Determine if the question requires simple retrieval or complex multi-hop reasoning."""
+    payload = {
+        "model": config.REMOTE_LLM_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": """Determine if the user's question requires simple retrieval or complex multi-hop reasoning.
+                
+                Simple questions can be answered with a single retrieval operation and direct generation of an answer.
+                Complex questions require multiple reasoning steps and retrievals to reach a final answer.
+                
+                Reply with ONLY one of two options:
+                - "simple": If the question can be answered directly with a single retrieval.
+                - "complex": If the question requires multi-hop reasoning and multiple retrievals.
+                
+                Respond with only the word "simple" or "complex".
+                """,
+            },
+            {"role": "user", "content": query_text},
+        ],
+        "max_tokens": 3000,
+        "temperature": 0.1,
+        "top_p": 0.95,
+        "stream": False,
+        "n": 1,
+    }
+    return payload

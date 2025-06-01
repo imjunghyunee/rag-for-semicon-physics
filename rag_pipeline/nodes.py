@@ -108,3 +108,21 @@ def node_llm_answer(state: GraphState) -> GraphState:
         answer = str(answer)
 
     return {"answer": answer, "messages": [("assistant", answer)]}
+
+
+def node_simple_or_not(state: GraphState) -> dict:
+    """Determine if the question is simple or requires complex multi-hop reasoning."""
+    query: str = state["question"][-1]
+
+    payload = utils.build_payload_for_complexity_check(query)
+    response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
+    decision = response["choices"][0]["message"]["content"].strip().lower()
+
+    # Ensure response is valid
+    if decision not in ["simple", "complex"]:
+        print(f"Invalid complexity decision: '{decision}', defaulting to 'simple'")
+        decision = "simple"
+
+    print(f"Question complexity determined as: {decision}")
+    # Return as a dictionary with a routing key
+    return {"next": decision}
