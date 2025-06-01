@@ -19,6 +19,7 @@ def convert_to_string(value):
         return [convert_to_string(item) for item in value]
     elif isinstance(value, dict):
         return {key: convert_to_string(val) for key, val in value.items()}
+    return value
 
 
 def run(
@@ -41,7 +42,7 @@ def run(
     print("\n===== 최종 답변 =====\n")
     print(final_state["answer"])
     print("\n===== 내부 상태 (디버그) =====\n")
-    print(json.dumps(final_state, indent=2, ensure_ascii=False))
+    print(json.dumps(final_state_converted, indent=2, ensure_ascii=False))
 
     output_dir = Path("./output")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -53,23 +54,28 @@ def run(
     }
 
     output_filename = f"output_{uuid.uuid4()}.json"
-    with open(output_filename, "w", encoding="utf-8") as f:
+    output_path = output_dir / output_filename
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
 
-    print(f"Successfully saved {output_filename}! \n")
+    print(f"Successfully saved {output_path}! \n")
 
-    # # for eval
-    # serializable = {
-    #     "question": [
-    #         m.content if hasattr(m, "content") else str(m)
-    #         for m in final_state.get("question", [])
-    #     ],
-    #     "explanation": final_state.get("explanation", ""),
-    #     "context": final_state.get("context", ""),
-    #     "answer": final_state.get("answer", ""),
-    #     "scores": final_state.get("scores", ""),
-    # }
-    # return serializable
+    # for eval - 평가용 직렬화된 상태 반환
+    serializable = {
+        "question": [
+            m.content if hasattr(m, "content") else str(m)
+            for m in final_state.get("question", [])
+        ],
+        "explanation": final_state.get("explanation", ""),
+        "context": final_state.get("context", []),
+        "answer": final_state.get("answer", ""),
+        "score": final_state.get("scores", []),
+        # Query decomposition 관련 정보 추가
+        "subquestions": final_state.get("subquestions", []),
+        "subquestion_results": final_state.get("subquestion_results", []),
+        "combined_context": final_state.get("combined_context", ""),
+    }
+    return serializable
 
 
 if __name__ == "__main__":

@@ -7,8 +7,11 @@ import base64
 import cv2
 from pathlib import Path
 from pdf2image import convert_from_path
-import requests
+from openai import OpenAI
 from rag_pipeline.text_splitter import MarkdownHeaderTextSplitter
+
+# Initialize OpenAI client
+client = OpenAI(api_key=config.OPENAI_API_KEY)
 
 
 def encode_image(image_path, image_size=(837, 1012)):
@@ -64,17 +67,25 @@ def pdf_to_docs(file_path: Path) -> List[Document]:
         image_ext = image_ext.lstrip(".")  # e.g. png, jpg
         image_url = f"data:image/{image_ext};base64,{image_url}"
 
-        payload = {
-            "model": config.REMOTE_LLM_MODEL,
-            "messages": [
+        response = client.chat.completions.create(
+            model=config.OPENAI_MODEL,
+            messages=[
                 {
                     "role": "user",
-                    "content": f"Extract all the text from the image: {image_url}.",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Extract all the text from the image:",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_url},
+                        },
+                    ],
                 }
             ],
-        }
-        response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
-        text = response["choices"][0]["message"]["content"]
+        )
+        text = response.choices[0].message.content
 
         print(f"Successfully extracted text from: {filename}\n")
         all_texts.append(f"{text.strip()}\n")
@@ -108,17 +119,25 @@ def img_to_docs(file_path: Path) -> List[Document]:
         image_ext = image_ext.lstrip(".")  # e.g. png, jpg
         image_url = f"data:image/{image_ext};base64,{image_url}"
 
-        payload = {
-            "model": config.REMOTE_LLM_MODEL,
-            "messages": [
+        response = client.chat.completions.create(
+            model=config.OPENAI_MODEL,
+            messages=[
                 {
                     "role": "user",
-                    "content": f"Extract all the text from the image: {image_url}.",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Extract all the text from the image:",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_url},
+                        },
+                    ],
                 }
             ],
-        }
-        response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
-        text = response["choices"][0]["message"]["content"]
+        )
+        text = response.choices[0].message.content
 
         print(f"Successfully extracted text from: {filename}\n")
         all_texts.append(f"{text.strip()}\n")
@@ -137,114 +156,144 @@ def img_to_docs(file_path: Path) -> List[Document]:
     return split_contents
 
 
-def build_payload_for_summary_generation(query_text: str) -> dict:
-    payload = {
-        "model": config.REMOTE_LLM_MODEL,
-        "messages": [
+def generate_summary(query_text: str) -> str:
+    """Generate summary for the given query using OpenAI API."""
+    response = client.chat.completions.create(
+        model=config.OPENAI_MODEL,
+        messages=[
             {
                 "role": "system",
-                "content": """You are a helpful assistant that generates summaries based on the provided question.""",
+                "content": "You are a helpful assistant that generates summaries based on the provided question.",
             },
-            {"role": "user", "content": f"[Question]:{query_text}"},
-        ],
-        "max_tokens": 5000,
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "stream": False,
-        "n": 1,
-    }
-    return payload
-
-
-def build_payload_for_hyde(query_text: str) -> dict:
-    payload = {
-        "model": config.REMOTE_LLM_MODEL,
-        "messages": [
             {
-                "role": "system",
-                "content": """You are a helpful assistant that generates answers based on the provided question and context.""",
+                "role": "user",
+                "content": f"[Question]:{query_text}",
             },
-            {"role": "user", "content": f"[Question]:{query_text}"},
         ],
-        "max_tokens": 5000,
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "stream": False,
-        "n": 1,
-    }
-    return payload
+        max_tokens=5000,
+        temperature=0.5,
+        top_p=0.95,
+    )
+    return response.choices[0].message.content
 
 
-def build_payload_for_llm_answer(query_text: str, context: str) -> dict:
-    payload = {
-        "model": config.REMOTE_LLM_MODEL,
-        "messages": [
+def generate_hyde_document(query_text: str) -> str:
+    """Generate hypothetical document for HyDE using OpenAI API."""
+    response = client.chat.completions.create(
+        model=config.OPENAI_MODEL,
+        messages=[
             {
                 "role": "system",
-                "content": """You are a helpful assistant that generates answers based on the provided question and context.""",
+                "content": "You are a helpful assistant that generates answers based on the provided question and context.",
+            },
+            {
+                "role": "user",
+                "content": f"[Question]:{query_text}",
+            },
+        ],
+        max_tokens=5000,
+        temperature=0.5,
+        top_p=0.95,
+    )
+    return response.choices[0].message.content
+
+
+def generate_llm_answer(query_text: str, context: str) -> str:
+    """Generate final answer using OpenAI API."""
+    response = client.chat.completions.create(
+        model=config.OPENAI_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that generates answers based on the provided question and context.",
             },
             {
                 "role": "user",
                 "content": f"[Question]:{query_text}, [Context]:{context}",
             },
         ],
-        "max_tokens": 5000,
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "stream": False,
-        "n": 1,
-    }
-    return payload
+        max_tokens=5000,
+        temperature=0.5,
+        top_p=0.95,
+    )
+    return response.choices[0].message.content
 
 
-def build_payload_for_complexity_check(query_text: str) -> dict:
+def check_query_complexity(query_text: str) -> str:
     """Determine if the question requires simple retrieval or complex multi-hop reasoning."""
-    payload = {
-        "model": config.REMOTE_LLM_MODEL,
-        "messages": [
-            {
-                "role": "system",
-                "content": """You are a helpful assistant that generates answers based on the provided question and context.""",
-            },
-            {
-                "role": "user",
-                "content": f"[Question]:{query_text}, [Context]:{context}",
-            },
-        ],
-        "max_tokens": 5000,
-        "temperature": 0.5,
-        "top_p": 0.95,
-        "stream": False,
-        "n": 1,
-    }
-    return payload
+    
+    try:
+        response = client.chat.completions.create(
+            model=config.OPENAI_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are an expert in semiconductor physics who specializes in categorizing question complexity.
 
+Analyze questions to determine if they require simple retrieval or complex multi-hop reasoning.
 
-def build_payload_for_complexity_check(query_text: str) -> dict:
-    """Determine if the question requires simple retrieval or complex multi-hop reasoning."""
-    payload = {
-        "model": config.REMOTE_LLM_MODEL,
-        "messages": [
-            {
-                "role": "system",
-                "content": """Determine if the user's question requires simple retrieval or complex multi-hop reasoning.
+SIMPLE questions typically:
+- Ask for a single definition, formula, or concept
+- Can be answered with direct information retrieval
+- Have clear, straightforward answers in textbooks
+- Examples: "What is the bandgap of silicon?", "Define hole mobility", "What is the formula for electron drift velocity?"
+
+COMPLEX questions typically:
+- Require multiple steps of reasoning or calculation
+- Need integration of multiple concepts
+- Ask for analysis, comparison, or multi-step problem solving
+- Involve design decisions or trade-off analysis
+- Examples: "How does temperature affect both carrier concentration and mobility in silicon devices?", "Analyze the trade-offs between different doping strategies for optimizing transistor performance", "Compare the effects of different gate materials on MOSFET threshold voltage and explain the underlying physics"
+
+Additional complexity indicators:
+- Words like: "compare", "analyze", "trade-off", "optimize", "design", "both", "relationship between", "how does", "calculate and", "determine the effect", "multi-step"
+- Questions requiring synthesis of multiple physics concepts
+- Problems involving device design or performance optimization
+
+Respond with ONLY one word: "simple" or "complex" """
+                },
+                {
+                    "role": "user",
+                    "content": f"Categorize this semiconductor physics question: {query_text}"
+                },
+            ],
+            max_tokens=10,
+            temperature=0.1,
+            top_p=0.95,
+        )
+        
+        decision = response.choices[0].message.content.strip().lower()
+        
+        # 추가 검증 로직
+        if decision not in ["simple", "complex"]:
+            print(f"Warning: Invalid complexity decision '{decision}', applying fallback logic")
+            # 폴백 로직: 특정 키워드 기반 판별
+            complex_indicators = [
+                "compare", "analyze", "trade-off", "optimize", "design", 
+                "multiple", "both", "relationship between", "how does",
+                "calculate and", "determine the effect", "multi-step",
+                "synthesis", "integration", "performance", "efficiency"
+            ]
+            
+            question_lower = query_text.lower()
+            
+            # 복잡성 점수 계산
+            complexity_score = sum(1 for indicator in complex_indicators if indicator in question_lower)
+            
+            # 추가적인 복잡성 지표들
+            if len(query_text.split()) > 15:  # 긴 질문은 복잡할 가능성이 높음
+                complexity_score += 1
+            if "?" in query_text and query_text.count("?") > 1:  # 여러 질문
+                complexity_score += 1
+            if any(word in question_lower for word in ["step", "process", "procedure"]):
+                complexity_score += 1
                 
-                Simple questions can be answered with a single retrieval operation and direct generation of an answer.
-                Complex questions require multiple reasoning steps and retrievals to reach a final answer.
+            decision = "complex" if complexity_score >= 2 else "simple"
                 
-                Reply with ONLY one of two options:
-                - "simple": If the question can be answered directly with a single retrieval.
-                - "complex": If the question requires multi-hop reasoning and multiple retrievals.
-                
-                Respond with only the word "simple" or "complex".
-                """,
-            },
-            {"role": "user", "content": query_text},
-        ],
-        "max_tokens": 3000,
-        "temperature": 0.1,
-        "top_p": 0.95,
-        "stream": False,
-        "n": 1,
-    }
-    return payload
+        print(f"Question complexity determined as: {decision}")
+        return decision
+        
+    except Exception as e:
+        print(f"Error in complexity check: {e}")
+        # 에러 발생 시 안전한 기본값
+        return "simple"

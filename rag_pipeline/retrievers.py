@@ -1,21 +1,27 @@
 from __future__ import annotations
-import json, requests
+import json
 from pathlib import Path
 from typing import List, Tuple
 import torch
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
-from langchain.embeddings import (
-    HuggingFaceEmbeddings,
-    HuggingFaceCrossEncoder,
-)
-from langchain.vectorstores import FAISS
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
+# from langchain.embeddings import (
+#     HuggingFaceEmbeddings,
+#     HuggingFaceCrossEncoder,
+# )
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+
+#from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
+
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
+
 from langchain.storage import InMemoryStore
 from langchain.schema import Document
 from langchain.schema.messages import HumanMessage
 
-# from pdf2image import convert_from_path
 from rag_pipeline import config, utils
 import torch.nn.functional as F
 
@@ -112,73 +118,94 @@ def retrieve_from_img_embedding(
     return best_docs
 
 
-def vectordb_retrieve(query: HumanMessage | str) -> Tuple[List[Document], str]:
-    query_text = query.content if hasattr(query, "content") else query
+def vectordb_retrieve(query: HumanMessage | str) -> List[Document]:
+    """기본 벡터 DB 검색 - 반환값 일관성 수정"""
+    try:
+        query_text = query.content if hasattr(query, "content") else query
 
-    vectordb = FAISS.load_local(
-        config.CONTENT_DB_PATH,
-        embeddings=embeddings,
-        allow_dangerous_deserialization=True,
-    )
+        vectordb = FAISS.load_local(
+            config.CONTENT_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
 
-    query_emb = model.encode(
-        query_text,
-        convert_to_tensor=False,
-        normalize_embeddings=True,
-    )
+        query_emb = model.encode(
+            query_text,
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
 
-    sem = vectordb.similarity_search_by_vector(query_emb, k=config.TOP_K)
+        sem = vectordb.similarity_search_by_vector(query_emb, k=config.TOP_K)
 
-    doc_vecs = model.encode(
-        [d.page_content for d in sem],
-        convert_to_tensor=False,
-        normalize_embeddings=True,
-    )
+        doc_vecs = model.encode(
+            [d.page_content for d in sem],
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
 
-    cos_sim = util.cos_sim(query_emb, doc_vecs)[0].float().cpu().numpy()
-    with open(config.SAVE_PATH, "w", encoding="utf-8") as f:
-        json.dump(cos_sim.tolist(), f, ensure_ascii=False)
+        cos_sim = util.cos_sim(query_emb, doc_vecs)[0].float().cpu().numpy()
+        
+        # 출력 디렉토리 생성 확인
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        with open(config.SAVE_PATH, "w", encoding="utf-8") as f:
+            json.dump(cos_sim.tolist(), f, ensure_ascii=False)
 
-    # 조건부로 reranking 적용
-    if config.RERANK:
-        reranked_docs, scores = _rerank(query_text, sem)
-        return reranked_docs
+        # 조건부로 reranking 적용
+        if config.RERANK:
+            reranked_docs, scores = _rerank(query_text, sem)
+            return reranked_docs
 
-    return sem
+        return sem
+        
+    except Exception as e:
+        print(f"Error in vectordb_retrieve: {e}")
+        return []
 
 
 def vectordb_hybrid_retrieve(
     query: HumanMessage | str, weights: List[float] = [0.5, 0.5]
-) -> Tuple[List[Document], str]:
-    """FAISS + BM25 하이브리드 검색"""
-    query_text = query.content if hasattr(query, "content") else query
+) -> List[Document]:
+    """FAISS + BM25 하이브리드 검색 - 반환값 일관성 수정"""
+    try:
+        query_text = query.content if hasattr(query, "content") else query
 
-    vectordb = FAISS.load_local(
-        config.CONTENT_DB_PATH,
-        embeddings=embeddings,
-        allow_dangerous_deserialization=True,
-    )
-    faiss_retriever = vectordb.as_retriever(search_kwargs={"k": config.TOP_K})
+        vectordb = FAISS.load_local(
+            config.CONTENT_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+        faiss_retriever = vectordb.as_retriever(search_kwargs={"k": config.TOP_K})
 
-    all_docs = list(vectordb.docstore._dict.values())
-    bm25_retriever = BM25Retriever.from_documents(all_docs)
-    bm25_retriever.k = config.TOP_K
+        all_docs = list(vectordb.docstore._dict.values())
+        bm25_retriever = BM25Retriever.from_documents(all_docs)
+        bm25_retriever.k = config.TOP_K
 
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=[faiss_retriever, bm25_retriever],
-        weights=weights,
-    )
+        ensemble_retriever = EnsembleRetriever(
+            retrievers=[faiss_retriever, bm25_retriever],
+            weights=weights,
+        )
 
-    sem = ensemble_retriever.get_relevant_documents(query_text)
+        sem = ensemble_retriever.get_relevant_documents(query_text)
 
-    reranked_docs, scores = _rerank(query_text, sem)
-    with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
-        json.dump([float(s) for s in scores], f, ensure_ascii=False)
-    return reranked_docs
+        reranked_docs, scores = _rerank(query_text, sem)
+        
+        # 출력 디렉토리 생성 확인
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
+            json.dump([float(s) for s in scores], f, ensure_ascii=False)
+        return reranked_docs
+        
+    except Exception as e:
+        print(f"Error in vectordb_hybrid_retrieve: {e}")
+        return []
 
 
 def summary_retrieve(query: HumanMessage | str) -> Tuple[List[Document], str]:
-    """FAISS ­+ LLM 설명 + 임베딩 검색"""
+    """FAISS + LLM 설명 + 임베딩 검색"""
     query_text = query.content if hasattr(query, "content") else query
 
     vectordb = FAISS.load_local(
@@ -187,10 +214,7 @@ def summary_retrieve(query: HumanMessage | str) -> Tuple[List[Document], str]:
         allow_dangerous_deserialization=True,
     )
 
-    payload = utils.build_payload_for_summary_generation(query_text)
-
-    response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
-    query_explanation = response["choices"][0]["message"]["content"]
+    query_explanation = utils.generate_summary(query_text)
 
     query_emb = model.encode(
         query_explanation,
@@ -231,9 +255,7 @@ def summary_hybrid_retrieve(
     )
 
     # LLM으로 질문 설명 생성
-    payload = utils.build_payload_for_summary_generation(query_text)
-    response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
-    query_explanation = response["choices"][0]["message"]["content"]
+    query_explanation = utils.generate_summary(query_text)
 
     # 하이브리드 검색 설정
     faiss_retriever = vectordb.as_retriever(search_kwargs={"k": config.TOP_K})
@@ -255,62 +277,74 @@ def summary_hybrid_retrieve(
     return reranked_docs, query_explanation
 
 
-def hyde_retrieve(query: str):
-    query_text = query.content if hasattr(query, "content") else query
+def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
+    """HyDE 검색 - 에러 처리 및 반환값 일관성 개선"""
+    try:
+        query_text = query.content if hasattr(query, "content") else query
 
-    vectordb = FAISS.load_local(
-        config.CONTENT_DB_PATH,
-        embeddings=embeddings,
-        allow_dangerous_deserialization=True,
-    )
+        vectordb = FAISS.load_local(
+            config.CONTENT_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
 
-    hydes: List[np.ndarray] = []
-    hypo_docs: List[str] = []
+        hydes: List[np.ndarray] = []
+        hypo_docs: List[str] = []
 
-    for _ in range(5):
-        payload = utils.build_payload_for_hyde  # HyDE용 프롬프트
-        response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
-        hypo_doc = response["choices"][0]["message"]["content"]
-        hypo_docs.append(hypo_doc)
+        for i in range(5):
+            try:
+                hypo_doc = utils.generate_hyde_document(query_text)
+                hypo_docs.append(hypo_doc)
 
-        embedding = model.encode(
-            hypo_doc,
+                embedding = model.encode(
+                    hypo_doc,
+                    convert_to_tensor=True,
+                    normalize_embeddings=True,
+                ).cpu()
+                hydes.append(embedding)
+                
+            except Exception as e:
+                print(f"Error generating HyDE document {i+1}: {e}")
+                continue
+
+        if not hydes:
+            print("Warning: No HyDE documents generated, falling back to direct search")
+            return vectordb_retrieve(query), []
+
+        mean_hyde = torch.stack(hydes).mean(dim=0)
+        mean_hyde = F.normalize(mean_hyde, p=2, dim=0)
+
+        mean_hyde_np = mean_hyde.float().numpy()
+
+        sem = vectordb.similarity_search_by_vector(mean_hyde_np, k=config.TOP_K)
+
+        sem_vecs = model.encode(
+            [d.page_content for d in sem],
             convert_to_tensor=True,
             normalize_embeddings=True,
         ).cpu()
-        hydes.append(embedding)
 
-    # mean_hyde = np.mean(np.stack(hydes, axis=0), axis=0)
-    # norm = np.linalg.norm(mean_hyde)
-    # if norm > 0:
-    #     mean_hyde /= norm
-    mean_hyde = torch.stack(hydes).mean(dim=0)
-    mean_hyde = F.normalize(mean_hyde, p=2, dim=0)
+        dtype = torch.float32
+        mean_hyde = mean_hyde.to(dtype)
+        sem_vecs = sem_vecs.to(dtype)
+        sem_hyde_cos_sim = util.cos_sim(mean_hyde.unsqueeze(0), sem_vecs)[0].numpy()
+        
+        # 출력 디렉토리 생성 확인
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
+            json.dump(sem_hyde_cos_sim.tolist(), f, ensure_ascii=False)
 
-    mean_hyde_np = mean_hyde.float().numpy()
+        if config.RERANK:
+            reranked_docs, scores = _rerank(query_text, sem)
+            return reranked_docs, hypo_docs
 
-    sem = vectordb.similarity_search_by_vector(mean_hyde_np, k=config.TOP_K)
-
-    sem_vecs = model.encode(
-        [d.page_content for d in sem],
-        convert_to_tensor=True,
-        normalize_embeddings=True,
-    ).cpu()
-
-    dtype = torch.float32
-    mean_hyde = mean_hyde.to(dtype)
-    sem_vecs = sem_vecs.to(dtype)
-    # sem_hyde_cos_sim = util.cos_sim(mean_hyde, sem_vecs)[0].cpu().numpy()
-    sem_hyde_cos_sim = util.cos_sim(mean_hyde.unsqueeze(0), sem_vecs)[0].numpy()
-    with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
-        json.dump(sem_hyde_cos_sim.tolist(), f, ensure_ascii=False)
-
-    if config.RERANK:
-        query_text = query
-        reranked_docs, scores = _rerank(query_text, sem)
-        return reranked_docs, hypo_docs
-
-    return sem, hypo_docs
+        return sem, hypo_docs
+        
+    except Exception as e:
+        print(f"Error in hyde_retrieve: {e}")
+        return [], []
 
 
 def hyde_hybrid_retrieve(
@@ -330,9 +364,7 @@ def hyde_hybrid_retrieve(
 
     # HyDE 문서 생성
     for _ in range(5):
-        payload = utils.buld_payload_for_hyde(query_text)
-        response = requests.post(config.REMOTE_LLM_URL, json=payload).json()
-        hypo_doc = response["choices"][0]["message"]["content"]
+        hypo_doc = utils.generate_hyde_document(query_text)
         hypo_docs.append(hypo_doc)
 
         embedding = model.encode(

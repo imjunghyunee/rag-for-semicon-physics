@@ -1,0 +1,43 @@
+# Core dependencies
+torch>=2.0.0
+transformers>=4.30.0
+sentence-transformers>=2.2.2
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# LangChain ecosystem
+langchain>=0.1.0
+langchain-community>=0.0.20
+langchain-core>=0.1.20
+langgraph>=0.0.40
+
+# Vector databases and search
+faiss-cpu>=1.7.4
+rank-bm25>=0.2.2
+
+# Document processing
+pdf2image>=1.16.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# Scientific computing
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# Text processing
+markdown>=3.5.0
+pypdf>=3.15.0
+
+# Jina embeddings v3 dependency - MISSING PACKAGE 추가
+einops>=0.6.0
+
+# Additional tensor operations (for advanced models)
+rotary-embedding-torch>=0.2.0  # jina-embeddings-v3에서 필요할 수 있음
+
+# Development and testing
+jupyter>=1.0.0
+ipykernel>=6.25.0
+
+# Optional: for GPU acceleration (uncomment if using CUDA)
+# torch>=2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+# faiss-gpu>=1.7.4

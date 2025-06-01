@@ -1,8 +1,12 @@
 import json
-from langchain.document_loaders import TextLoader
+# from langchain.document_loaders import TextLoader
+from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import MarkdownHeaderTextSplitter
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
+# from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
+#from langchain.embeddings import HuggingFaceEmbeddings
+
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from transformers import AutoTokenizer
 
 # 1. Markdown 파일 로드

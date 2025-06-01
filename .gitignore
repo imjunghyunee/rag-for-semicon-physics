@@ -1,0 +1,61 @@
+# Environment variables
+.env
+*.env
+
+# Output directories
+output/
+logs/
+temp/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model files (large files)
+*.bin
+*.safetensors
+models/
+
+# Data files
+*.jsonl
+vectordb/
+
+# Jupyter
+.ipynb_checkpoints/
+
+requirements_stable.txt
+test_dependencies.py
+test_with_markdown.py
