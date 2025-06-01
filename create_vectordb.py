@@ -1,4 +1,5 @@
 import json
+import torch
 from langchain.document_loaders import TextLoader
 from langchain.text_splitter import MarkdownHeaderTextSplitter
 from langchain.vectorstores import FAISS
@@ -27,7 +28,15 @@ for doc in split_docs:
     print(f"{doc.metadata}", end="\n=====================\n")
 
 # 3. HuggingFace 임베딩 모델 정의
-embedding_model = HuggingFaceEmbeddings(model_name="jinaai/jina-embeddings-v3")
+# embedding_model = HuggingFaceEmbeddings(model_name="jinaai/jina-embeddings-v3")
+
+embedding_model = HuggingFaceEmbeddings(
+    model_name="jinaai/jina-embeddings-v3",
+    model_kwargs={
+        "trust_remote_code": True,
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+    },
+)
 
 # 4. FAISS vector DB 생성
 vectordb = FAISS.from_documents(split_docs, embedding_model)
@@ -39,7 +48,7 @@ print("Successfully created and saved the FAISS vector database.")
 
 
 # 5. Tokenizer 불러오기 (token count용)
-tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+tokenizer = AutoTokenizer.from_pretrained("jinaai/jina-embeddings-v3")
 
 # 6. 토큰 수 계산 및 json 저장용 리스트 생성
 token_info = []
