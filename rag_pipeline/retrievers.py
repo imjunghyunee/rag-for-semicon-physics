@@ -5,6 +5,8 @@ from typing import List, Tuple
 import torch
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
+from rank_bm25 import BM25Okapi
+
 # from langchain.embeddings import (
 #     HuggingFaceEmbeddings,
 #     HuggingFaceCrossEncoder,
@@ -12,7 +14,7 @@ from sentence_transformers import SentenceTransformer, util
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 
-#from langchain.vectorstores import FAISS
+# from langchain.vectorstores import FAISS
 from langchain_community.vectorstores import FAISS
 
 from langchain.retrievers import EnsembleRetriever
@@ -75,17 +77,105 @@ def retrieve_from_file_embedding(
 
     if not docs:
         return "Failed to extract text from PDF!"
+
     query_text = query.content if hasattr(query, "content") else query
-
     texts = [d.page_content for d in docs]
-    doc_vecs = model.encode(texts, normalize_embeddings=True)
-    q_vecs = model.encode([query_text], normalize_embeddings=True)[0]
 
+    # Determine retrieval approach based on config
+    hybrid_weight_check = config.HYBRID_WEIGHT < 1.0
+
+    if config.RETRIEVAL_TYPE == "original_query":
+        search_query = query_text
+    elif config.RETRIEVAL_TYPE == "hyde":
+        # Generate HyDE documents and use their average embedding
+        hydes = []
+        for _ in range(5):
+            try:
+                hypo_doc = utils.generate_hyde_document(query_text)
+                embedding = model.encode(hypo_doc, normalize_embeddings=True)
+                hydes.append(embedding)
+            except Exception as e:
+                print(f"Error generating HyDE document: {e}")
+                continue
+
+        if hydes:
+            mean_hyde = np.mean(np.stack(hydes, axis=0), axis=0)
+            norm = np.linalg.norm(mean_hyde)
+            if norm > 0:
+                mean_hyde /= norm
+            q_vecs = mean_hyde
+        else:
+            q_vecs = model.encode([query_text], normalize_embeddings=True)[0]
+        search_query = None  # We already have the query vector
+    elif config.RETRIEVAL_TYPE == "summary":
+        search_query = utils.generate_summary(query_text)
+    else:
+        search_query = query_text
+
+    # Calculate similarity scores
+    doc_vecs = model.encode(texts, normalize_embeddings=True)
+
+    if search_query is not None:
+        q_vecs = model.encode([search_query], normalize_embeddings=True)[0]
+
+    # Vector similarity scores
     cos_sim = util.cos_sim(q_vecs, doc_vecs)[0].float().cpu().numpy()
 
-    best_idx = cos_sim.argsort()[-top_k:][::-1]
+    if hybrid_weight_check:
+        # Hybrid retrieval: combine vector similarity with BM25
+
+        # Tokenize documents for BM25
+        tokenized_docs = [doc.split() for doc in texts]
+        bm25 = BM25Okapi(tokenized_docs)
+
+        # Get BM25 scores
+        if config.RETRIEVAL_TYPE == "summary":
+            bm25_query = utils.generate_summary(query_text).split()
+        elif config.RETRIEVAL_TYPE == "hyde":
+            # Generate HyDE documents for BM25 as well
+            hyde_docs_for_bm25 = []
+            for _ in range(5):
+                try:
+                    hypo_doc = utils.generate_hyde_document(query_text)
+                    hyde_docs_for_bm25.append(hypo_doc)
+                except Exception as e:
+                    print(f"Error generating HyDE document for BM25: {e}")
+                    continue
+
+            if hyde_docs_for_bm25:
+                # Combine all HyDE documents for BM25 query
+                combined_hyde_text = " ".join(hyde_docs_for_bm25)
+                bm25_query = combined_hyde_text.split()
+            else:
+                # Fallback to original query if HyDE generation fails
+                bm25_query = query_text.split()
+        else:
+            bm25_query = query_text.split()
+
+        bm25_scores = np.array(bm25.get_scores(bm25_query))
+
+        # Normalize BM25 scores to [0, 1]
+        if bm25_scores.max() > bm25_scores.min():
+            bm25_scores = (bm25_scores - bm25_scores.min()) / (
+                bm25_scores.max() - bm25_scores.min()
+            )
+
+        # Combine scores using hybrid weights
+        hybrid_weight_embedding = config.HYBRID_WEIGHT
+        hybrid_weight_bm25 = 1.0 - hybrid_weight_embedding
+
+        combined_scores = (
+            hybrid_weight_embedding * cos_sim + hybrid_weight_bm25 * bm25_scores
+        )
+
+        best_idx = combined_scores.argsort()[-top_k:][::-1]
+        best_scores = combined_scores[best_idx]
+    else:
+        # Pure vector similarity
+        best_idx = cos_sim.argsort()[-top_k:][::-1]
+        best_scores = cos_sim[best_idx]
+
     best_docs = [docs[i] for i in best_idx]
-    best_scores = cos_sim[best_idx]
 
     with open(config.SCORE_PATH, "w") as f:
         json.dump(best_scores.tolist(), f)
@@ -100,17 +190,105 @@ def retrieve_from_img_embedding(
 
     if not docs:
         return "Failed to extract text from image!"
+
     query_text = query.content if hasattr(query, "content") else query
-
     texts = [d.page_content for d in docs]
-    doc_vecs = model.encode(texts, normalize_embeddings=True)
-    q_vecs = model.encode([query_text], normalize_embeddings=True)[0]
 
+    # Determine retrieval approach based on config
+    hybrid_weight_check = config.HYBRID_WEIGHT < 1.0
+
+    if config.RETRIEVAL_TYPE == "original_query":
+        search_query = query_text
+    elif config.RETRIEVAL_TYPE == "hyde":
+        # Generate HyDE documents and use their average embedding
+        hydes = []
+        for _ in range(5):
+            try:
+                hypo_doc = utils.generate_hyde_document(query_text)
+                embedding = model.encode(hypo_doc, normalize_embeddings=True)
+                hydes.append(embedding)
+            except Exception as e:
+                print(f"Error generating HyDE document: {e}")
+                continue
+
+        if hydes:
+            mean_hyde = np.mean(np.stack(hydes, axis=0), axis=0)
+            norm = np.linalg.norm(mean_hyde)
+            if norm > 0:
+                mean_hyde /= norm
+            q_vecs = mean_hyde
+        else:
+            q_vecs = model.encode([query_text], normalize_embeddings=True)[0]
+        search_query = None  # We already have the query vector
+    elif config.RETRIEVAL_TYPE == "summary":
+        search_query = utils.generate_summary(query_text)
+    else:
+        search_query = query_text
+
+    # Calculate similarity scores
+    doc_vecs = model.encode(texts, normalize_embeddings=True)
+
+    if search_query is not None:
+        q_vecs = model.encode([search_query], normalize_embeddings=True)[0]
+
+    # Vector similarity scores
     cos_sim = util.cos_sim(q_vecs, doc_vecs)[0].float().cpu().numpy()
 
-    best_idx = cos_sim.argsort()[-top_k:][::-1]
+    if hybrid_weight_check:
+        # Hybrid retrieval: combine vector similarity with BM25
+
+        # Tokenize documents for BM25
+        tokenized_docs = [doc.split() for doc in texts]
+        bm25 = BM25Okapi(tokenized_docs)
+
+        # Get BM25 scores
+        if config.RETRIEVAL_TYPE == "summary":
+            bm25_query = utils.generate_summary(query_text).split()
+        elif config.RETRIEVAL_TYPE == "hyde":
+            # Generate HyDE documents for BM25 as well
+            hyde_docs_for_bm25 = []
+            for _ in range(5):
+                try:
+                    hypo_doc = utils.generate_hyde_document(query_text)
+                    hyde_docs_for_bm25.append(hypo_doc)
+                except Exception as e:
+                    print(f"Error generating HyDE document for BM25: {e}")
+                    continue
+
+            if hyde_docs_for_bm25:
+                # Combine all HyDE documents for BM25 query
+                combined_hyde_text = " ".join(hyde_docs_for_bm25)
+                bm25_query = combined_hyde_text.split()
+            else:
+                # Fallback to original query if HyDE generation fails
+                bm25_query = query_text.split()
+        else:
+            bm25_query = query_text.split()
+
+        bm25_scores = np.array(bm25.get_scores(bm25_query))
+
+        # Normalize BM25 scores to [0, 1]
+        if bm25_scores.max() > bm25_scores.min():
+            bm25_scores = (bm25_scores - bm25_scores.min()) / (
+                bm25_scores.max() - bm25_scores.min()
+            )
+
+        # Combine scores using hybrid weights
+        hybrid_weight_embedding = config.HYBRID_WEIGHT
+        hybrid_weight_bm25 = 1.0 - hybrid_weight_embedding
+
+        combined_scores = (
+            hybrid_weight_embedding * cos_sim + hybrid_weight_bm25 * bm25_scores
+        )
+
+        best_idx = combined_scores.argsort()[-top_k:][::-1]
+        best_scores = combined_scores[best_idx]
+    else:
+        # Pure vector similarity
+        best_idx = cos_sim.argsort()[-top_k:][::-1]
+        best_scores = cos_sim[best_idx]
+
     best_docs = [docs[i] for i in best_idx]
-    best_scores = cos_sim[best_idx]
 
     with open(config.SCORE_PATH, "w") as f:
         json.dump(best_scores.tolist(), f)
@@ -144,11 +322,11 @@ def vectordb_retrieve(query: HumanMessage | str) -> List[Document]:
         )
 
         cos_sim = util.cos_sim(query_emb, doc_vecs)[0].float().cpu().numpy()
-        
+
         # 출력 디렉토리 생성 확인
         output_dir = Path(config.OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         with open(config.SAVE_PATH, "w", encoding="utf-8") as f:
             json.dump(cos_sim.tolist(), f, ensure_ascii=False)
 
@@ -158,7 +336,7 @@ def vectordb_retrieve(query: HumanMessage | str) -> List[Document]:
             return reranked_docs
 
         return sem
-        
+
     except Exception as e:
         print(f"Error in vectordb_retrieve: {e}")
         return []
@@ -190,15 +368,15 @@ def vectordb_hybrid_retrieve(
         sem = ensemble_retriever.get_relevant_documents(query_text)
 
         reranked_docs, scores = _rerank(query_text, sem)
-        
+
         # 출력 디렉토리 생성 확인
         output_dir = Path(config.OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
             json.dump([float(s) for s in scores], f, ensure_ascii=False)
         return reranked_docs
-        
+
     except Exception as e:
         print(f"Error in vectordb_hybrid_retrieve: {e}")
         return []
@@ -302,7 +480,7 @@ def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
                     normalize_embeddings=True,
                 ).cpu()
                 hydes.append(embedding)
-                
+
             except Exception as e:
                 print(f"Error generating HyDE document {i+1}: {e}")
                 continue
@@ -328,11 +506,11 @@ def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
         mean_hyde = mean_hyde.to(dtype)
         sem_vecs = sem_vecs.to(dtype)
         sem_hyde_cos_sim = util.cos_sim(mean_hyde.unsqueeze(0), sem_vecs)[0].numpy()
-        
+
         # 출력 디렉토리 생성 확인
         output_dir = Path(config.OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
             json.dump(sem_hyde_cos_sim.tolist(), f, ensure_ascii=False)
 
@@ -341,7 +519,7 @@ def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
             return reranked_docs, hypo_docs
 
         return sem, hypo_docs
-        
+
     except Exception as e:
         print(f"Error in hyde_retrieve: {e}")
         return [], []

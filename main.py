@@ -2,6 +2,7 @@ from __future__ import annotations
 import argparse, json, sys, ast
 from pathlib import Path
 from rag_pipeline.graph_builder import build_graph
+from rag_pipeline import config
 from rag_pipeline.graph_state import GraphState
 from langchain.schema import Document
 from typing import Any, List, Dict
@@ -25,13 +26,13 @@ def convert_to_string(value):
 def run(
     query: str,
     pdf_path: str | None = None,
-    query_type: str | None = None,
-    hybrid_weights: List[float] | None = None,
+    img_path: str | None = None,
 ):
     graph = build_graph(
         Path(pdf_path) if pdf_path else None,
-        query_type if query_type else None,
-        hybrid_weights,
+        Path(img_path) if img_path else None,
+        config.RETRIEVAL_TYPE,
+        config.HYBRID_WEIGHT,
     )
     init_state: GraphState = {"question": [query], "messages": [("user", query)]}
     final_state = graph.invoke(init_state)
@@ -82,28 +83,29 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--query", required=True, help="question")
     p.add_argument("--pdf", help="pdf file path", default=None)
-    p.add_argument("--type", help="query type (hyde, summary)", default=None)
-    p.add_argument(
-        "--hybrid", help="hybrid retriever weights [float1,float2]", default=None
-    )
+    p.add_argument("--img", help="image file path", default=None)
+    # p.add_argument("--type", help="query type (hyde, summary)", default=None)
+    # p.add_argument(
+    #     "--hybrid", help="hybrid retriever weights [float1,float2]", default=None
+    # )
     args = p.parse_args()
 
-    hybrid_weights = None
-    if args.hybrid:
-        try:
-            hybrid_weights = ast.literal_eval(args.hybrid)
-            if not isinstance(hybrid_weights, list) or len(hybrid_weights) != 2:
-                print(
-                    "Warning: hybrid weights should be a list of two floats [float1,float2]"
-                )
-                hybrid_weights = None
-        except (SyntaxError, ValueError):
-            print(
-                "Warning: Could not parse hybrid weights. Format should be [float1,float2]"
-            )
+    # hybrid_weights = None
+    # if args.hybrid:
+    #     try:
+    #         hybrid_weights = ast.literal_eval(args.hybrid)
+    #         if not isinstance(hybrid_weights, list) or len(hybrid_weights) != 2:
+    #             print(
+    #                 "Warning: hybrid weights should be a list of two floats [float1,float2]"
+    #             )
+    #             hybrid_weights = None
+    #     except (SyntaxError, ValueError):
+    #         print(
+    #             "Warning: Could not parse hybrid weights. Format should be [float1,float2]"
+    #         )
 
     print(f"Query received: {args.query} (Type: {type(args.query)})")
-    if hybrid_weights:
-        print(f"Using hybrid retrieval with weights: {hybrid_weights}")
+    # if hybrid_weights:
+    #     print(f"Using hybrid retrieval with weights: {hybrid_weights}")
 
-    run(args.query, args.pdf, args.type, hybrid_weights)
+    run(args.query, args.pdf, args.img)

@@ -184,12 +184,15 @@ def node_query_decomposition(state: GraphState) -> GraphState:
     try:
         query: str = state["question"][-1]
 
-        # 하이브리드 가중치와 검색 타입 가져오기
-        hybrid_weights = state.get("hybrid_weights", None)
-        retrieval_type = state.get("retrieval_type", None)
+        hybrid_weight_embedding = config.HYBRID_WEIGHT
+        hybrid_weight_bm25 = 1 - hybrid_weight_embedding
+        hybrid_weights = [hybrid_weight_embedding, hybrid_weight_bm25]
+        retrieval_type = config.RETRIEVAL_TYPE
 
         print(f"Starting query decomposition for: {query}")
-        print(f"Using retrieval_type: {retrieval_type}, hybrid_weights: {hybrid_weights}")
+        print(
+            f"Using retrieval_type: {retrieval_type}, hybrid_weights: {hybrid_weights}"
+        )
 
         # 복잡한 질문 처리
         decomposition_result = query_decomposition.process_complex_query(

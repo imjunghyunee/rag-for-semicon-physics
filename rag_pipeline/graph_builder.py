@@ -8,6 +8,7 @@ from typing import List
 
 def build_graph(
     pdf_path: Path | None = None,
+    img_path: Path | None = None,
     retrieval_type: str | None = None,
     hybrid_weights: List[float] | None = None,
 ):
@@ -27,6 +28,10 @@ def build_graph(
         g.add_node(
             "retrieve_simple", lambda s: nodes.node_retrieve_file_embedding(s, pdf_path)
         )
+    elif img_path:
+        g.add_node(
+            "retrieve_simple", lambda s: nodes.node_retrieve_img_embedding(s, img_path)
+        )
     elif retrieval_type == "hyde" and hybrid_weights:
         g.add_node("retrieve_simple", nodes.node_retrieve_hyde_hybrid)
     elif retrieval_type == "hyde":
@@ -44,15 +49,16 @@ def build_graph(
     g.add_node("llm_answer_simple", nodes.node_llm_answer)
 
     # Complex query processing nodes - 초기 상태 정보를 전달하는 래퍼 함수들
-    def query_decomposition_with_params(state: GraphState) -> GraphState:
-        # 초기화 시 전달받은 파라미터들을 상태에 추가
-        if retrieval_type and "retrieval_type" not in state:
-            state["retrieval_type"] = retrieval_type
-        if hybrid_weights and "hybrid_weights" not in state:
-            state["hybrid_weights"] = hybrid_weights
-        return nodes.node_query_decomposition(state)
+    # def query_decomposition_with_params(state: GraphState) -> GraphState:
+    #     # 초기화 시 전달받은 파라미터들을 상태에 추가
+    #     if retrieval_type and "retrieval_type" not in state:
+    #         state["retrieval_type"] = retrieval_type
+    #     if hybrid_weights and "hybrid_weights" not in state:
+    #         state["hybrid_weights"] = hybrid_weights
+    #     return nodes.node_query_decomposition(state)
 
-    g.add_node("query_decomposition", query_decomposition_with_params)
+    # g.add_node("query_decomposition", query_decomposition_with_params)
+    g.add_node("query_decomposition", nodes.node_query_decomposition)
     g.add_node("llm_answer_complex", nodes.node_complex_llm_answer)
 
     # Entry point
