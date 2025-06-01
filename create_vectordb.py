@@ -8,6 +8,7 @@ from langchain_community.vectorstores import FAISS
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from transformers import AutoTokenizer
+import torch
 
 # 1. Markdown 파일 로드
 file_path = "./data/ai.md"
@@ -31,8 +32,13 @@ for doc in split_docs:
     print(f"{doc.metadata}", end="\n=====================\n")
 
 # 3. HuggingFace 임베딩 모델 정의
-embedding_model = HuggingFaceEmbeddings(model_name="jinaai/jina-embeddings-v3")
-
+embedding_model = HuggingFaceEmbeddings(
+    model_name="jinaai/jina-embeddings-v3",
+    model_kwargs={
+        "trust_remote_code": True,
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+    },
+)
 # 4. FAISS vector DB 생성
 vectordb = FAISS.from_documents(split_docs, embedding_model)
 
