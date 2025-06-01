@@ -4,11 +4,13 @@ Further modifications necessary:
 1. Query Decomposition
    When query is considered "complex", initiate "query_decomposition"
    
-  ```Query decomposition means:
+  ````
+  Query decomposition means:
   2-1. Based on the original query, llm generates subquestions to solve the complex query question.
   2-2. Retrieval process is done for each subquestion. (max_subquestion_num=5)
   2-3. Add all contexts and answer for each subquestion.
-  2-4. Based on that as context, llm finally ouputs final answer.```
+  2-4. Based on that as context, llm finally ouputs final answer.
+````
 
 3. Modify embedding model fine-tuning code.
   Find possible reason for the code "./train/train_jina_hard_neg_mining_final.py" to fail training the model properly
