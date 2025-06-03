@@ -71,10 +71,13 @@ def run(
         "context": final_state.get("context", []),
         "answer": final_state.get("answer", ""),
         "score": final_state.get("scores", []),
-        # Query decomposition 관련 정보 추가
+        # Legacy Query decomposition 관련 정보
         "subquestions": final_state.get("subquestions", []),
         "subquestion_results": final_state.get("subquestion_results", []),
         "combined_context": final_state.get("combined_context", ""),
+        # Plan and Execute 관련 정보 추가
+        "plan": final_state.get("plan", {}),
+        "executed_steps": final_state.get("executed_steps", []),
     }
     return serializable
 

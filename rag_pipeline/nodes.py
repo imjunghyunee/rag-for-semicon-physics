@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 from typing import List
 from rag_pipeline.graph_state import GraphState
-from rag_pipeline import retrievers, config, utils, query_decomposition
+from rag_pipeline import retrievers, config, utils, plan_execute_langgraph
 from pathlib import Path
 
 
@@ -179,8 +179,8 @@ def node_simple_or_not(state: GraphState) -> dict:
     return {"next": decision}
 
 
-def node_query_decomposition(state: GraphState) -> GraphState:
-    """복잡한 질문을 하위 질문들로 분해하고 각각 처리합니다."""
+def node_plan_and_execute(state: GraphState) -> GraphState:
+    """LangGraph 기반 Plan and Execute agent를 사용하여 복잡한 질문을 처리합니다."""
     try:
         query: str = state["question"][-1]
 
@@ -189,60 +189,40 @@ def node_query_decomposition(state: GraphState) -> GraphState:
         hybrid_weights = [hybrid_weight_embedding, hybrid_weight_bm25]
         retrieval_type = config.RETRIEVAL_TYPE
 
-        print(f"Starting query decomposition for: {query}")
+        print(f"Starting LangGraph Plan and Execute for: {query}")
         print(
             f"Using retrieval_type: {retrieval_type}, hybrid_weights: {hybrid_weights}"
         )
 
-        # 복잡한 질문 처리
-        decomposition_result = query_decomposition.process_complex_query(
+        # LangGraph 기반 Plan and Execute 방식으로 복잡한 질문 처리
+        result = plan_execute_langgraph.process_complex_query_with_langgraph_plan_execute(
             original_query=query,
             retrieval_type=retrieval_type,
             hybrid_weights=hybrid_weights,
-            max_subquestions=5,
+            max_steps=8,  # 🔥 recursion_limit와 맞춤
         )
 
+        # 🔥 모든 정보를 완전히 처리하여 반환
         return {
-            "subquestions": decomposition_result["subquestions"],
-            "subquestion_results": decomposition_result["subquestion_results"],
-            "context": decomposition_result["all_context_docs"],
-            "combined_context": decomposition_result["combined_context"],
-            "explanation": f"Query decomposed into {len(decomposition_result['subquestions'])} sub-questions",
+            "plan": result["plan"],
+            "executed_steps": result["executed_steps"],
+            "context": result["all_context_docs"],
+            "combined_context": result["combined_context"],
+            "explanation": f"LangGraph Plan and Execute completed with {result['total_steps']} steps",
+            "answer": result["final_answer"],  # 🔥 최종 답변 포함
+            "messages": [("assistant", result["final_answer"])],  # 🔥 메시지도 추가
         }
 
     except Exception as e:
-        print(f"Error in query decomposition: {e}")
+        print(f"Error in LangGraph Plan and Execute: {e}")
+        # 🔥 에러 시에도 폴백 답변 제공
+        error_answer = f"Error in LangGraph Plan and Execute: {str(e)}"
         return {
-            "subquestions": [state["question"][-1]],
-            "subquestion_results": [],
+            "plan": [],
+            "executed_steps": [],
             "context": [],
             "combined_context": "",
-            "explanation": f"Error in decomposition: {str(e)}",
-        }
-
-
-def node_complex_llm_answer(state: GraphState) -> GraphState:
-    """복잡한 질문에 대한 최종 답변을 생성합니다."""
-    try:
-        query: str = state["question"][-1]
-        subquestion_results = state.get("subquestion_results", [])
-
-        if not subquestion_results:
-            return {
-                "answer": f"No sub-question results available for: {query}",
-                "messages": [("assistant", "No sub-question results")],
-            }
-
-        # 모든 하위 질문의 결과를 종합하여 최종 답변 생성
-        final_answer = query_decomposition.aggregate_subquestion_results(
-            original_query=query, subquestion_results=subquestion_results
-        )
-
-        return {"answer": final_answer, "messages": [("assistant", final_answer)]}
-
-    except Exception as e:
-        print(f"Error in complex LLM answer generation: {e}")
-        return {
-            "answer": f"Error generating complex answer: {str(e)}",
-            "messages": [("assistant", f"Error: {str(e)}")],
+            "explanation": error_answer,
+            "answer": error_answer,
+            "messages": [("assistant", error_answer)],
         }

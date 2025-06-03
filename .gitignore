@@ -59,3 +59,4 @@ vectordb/
 requirements_stable.txt
 test_dependencies.py
 test_with_markdown.py
+plan-and-execute.ipynb

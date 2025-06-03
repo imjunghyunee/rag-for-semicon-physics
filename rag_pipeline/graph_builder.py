@@ -48,18 +48,8 @@ def build_graph(
     g.add_node("relevance_check", nodes.node_relevance_check)
     g.add_node("llm_answer_simple", nodes.node_llm_answer)
 
-    # Complex query processing nodes - 초기 상태 정보를 전달하는 래퍼 함수들
-    # def query_decomposition_with_params(state: GraphState) -> GraphState:
-    #     # 초기화 시 전달받은 파라미터들을 상태에 추가
-    #     if retrieval_type and "retrieval_type" not in state:
-    #         state["retrieval_type"] = retrieval_type
-    #     if hybrid_weights and "hybrid_weights" not in state:
-    #         state["hybrid_weights"] = hybrid_weights
-    #     return nodes.node_query_decomposition(state)
-
-    # g.add_node("query_decomposition", query_decomposition_with_params)
-    g.add_node("query_decomposition", nodes.node_query_decomposition)
-    g.add_node("llm_answer_complex", nodes.node_complex_llm_answer)
+    # Complex query processing nodes - 단일 노드로 단순화
+    g.add_node("plan_and_execute", nodes.node_plan_and_execute)
 
     # Entry point
     g.set_entry_point("complexity_check")
@@ -70,7 +60,7 @@ def build_graph(
         route_complexity,
         {
             "simple": "retrieve_simple",
-            "complex": "query_decomposition",
+            "complex": "plan_and_execute",  # 🔥 직접 종료
         },
     )
 
@@ -79,8 +69,7 @@ def build_graph(
     g.add_edge("relevance_check", "llm_answer_simple")
     g.add_edge("llm_answer_simple", "__end__")
 
-    # Complex query path
-    g.add_edge("query_decomposition", "llm_answer_complex")
-    g.add_edge("llm_answer_complex", "__end__")
+    # Complex query path - 🔥 바로 종료
+    g.add_edge("plan_and_execute", "__end__")
 
     return g.compile()

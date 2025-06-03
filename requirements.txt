@@ -38,6 +38,7 @@ rotary-embedding-torch>=0.2.0  # jina-embeddings-v3에서 필요할 수 있음
 jupyter>=1.0.0
 ipykernel>=6.25.0
 
+tiktoken >=0.3.0  # Tokenization for OpenAI models
 # Optional: for GPU acceleration (uncomment if using CUDA)
 # torch>=2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
 # faiss-gpu>=1.7.4

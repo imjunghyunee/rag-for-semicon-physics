@@ -106,7 +106,7 @@ def run_evaluation(
             else:
                 answer_correct_str = "No"
 
-            # Store detailed result
+            # Store detailed result - Plan and Execute 정보 추가
             detailed_results.append(
                 {
                     "id": record["id"],
@@ -117,6 +117,9 @@ def run_evaluation(
                     "predicted_answer": predicted_answer,
                     "gt_answer": gt_answer,
                     "answer_correct": answer_correct_str,
+                    # Plan and Execute 관련 정보 추가
+                    "plan": graph_state.get("plan", {}),
+                    "executed_steps": graph_state.get("executed_steps", []),
                 }
             )
 

@@ -26,7 +26,7 @@ def _validate_path(path: Path, description: str) -> Path:
 EMBED_MODEL_NAME: str = "jinaai/jina-embeddings-v3"
 RERANKER_NAME: str = "BAAI/bge-reranker-v2-m3"
 CONTENT_DB_PATH: Path = Path(
-    "C:/Users/juk27/OneDrive/Desktop/JH/rag-for-semicon-physics/vectordb/faiss"
+    "C:/Users/user/Desktop/KU/JH/rag-for-semicon-physics/vectordb/faiss"
 )
 
 # ----- OpenAI API 설정 -----
