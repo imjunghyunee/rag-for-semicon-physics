@@ -2,23 +2,22 @@
 
 1. pip install -r requirements.txt 실행
 
--   만약 streamlit에서 의존성 문제가 발생한다면 requirements_streamlit.txt로도 다운
--   그래도 streamlit이 안된다면 python fix_dependencies.py 실행
--   만약 위 두 단계 없이 바로 streamlit과 python main.py가 실행된다면 위 두 파일 requirements_streamlit.txt과
-    fix_dependencies.py은 legacy파일로 옮겨도 무방.
+    -   만약 streamlit에서 의존성 문제가 발생한다면 requirements_streamlit.txt로도 다운
+    -   그래도 streamlit이 안된다면 python fix_dependencies.py 실행
+    -   만약 위 두 단계 없이 바로 streamlit과 python main.py가 실행된다면 위 두 파일 requirements_streamlit.txt과 fix_dependencies.py은 legacy파일로 옮겨도 무방.
 
 2. 터미널에서 실행하는 명령어 : python main.py --query "인공지능 기술의 발전이 노동 시장에 미치는 영향을 분석하고, 이에 따른 윤리적 문제들과 정책적 대응 방안을 비교하여 설명하시오."
 
--   쿼리는 예시
+    -   쿼리는 예시
 
 3. streamlit 실행 명령어:
 
--   python run_streamlit.py
--   streamlit run streamlit_app.py
-    둘 다 가능
+    -   python run_streamlit.py
+    -   streamlit run streamlit_app.py
+        둘 다 가능
 
--   streamlit 실행하면 화면이 뜰 때까지 시간이 꽤 소모. 터미널 창에서 어떤 RuntimeError가 두 개 뜰 떄까지 대기.
--   RuntimeError가 뜨면 Streamlit 페이지 로딩 완료, RuntimeError는 무시해도 됨.(있어도 실행은 되더라구)
+    -   streamlit 실행하면 화면이 뜰 때까지 시간이 꽤 소모. 터미널 창에서 어떤 RuntimeError가 두 개 뜰 떄까지 대기.
+    -   RuntimeError가 뜨면 Streamlit 페이지 로딩 완료, RuntimeError는 무시해도 됨.(있어도 실행은 되더라구)
 
 4. streamlit에서 쿼리넣고 실행시 총 두 번 langgraph 실행....ㅜ
 
