@@ -30,6 +30,7 @@
 ![Image](https://github.com/user-attachments/assets/12186f89-56ce-4d52-94d5-1f5a973a9b90)
 
 ![Image](https://github.com/user-attachments/assets/49749f8c-d467-44d4-8f3b-966b6aa526f5)
+    
     -   execution plan : 맨 마지막 replan 과정에서 뽑아낸 plan인 듯.... 이거는 최대한 무시하는게 나을 듯.....?
     -   📊 Executed Steps (5 steps) : 전체 step이 어떤 plan을 따라갔는지 확인 가능. 하지만 그 plan에 대한 step 결과가 어떤 것인지까지는 출력이 안 나옴.
     -   지금 확인해보니 📊 Executed Steps (5 steps), 📚 Retrieved Context 이 두 부분 toggle하면 더 자세한 내용 볼 수 있도록 하는게 의도였는데 모든 출력이 반영이 안되었음...
