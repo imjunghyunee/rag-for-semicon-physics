@@ -33,8 +33,9 @@
 
 ![Image](https://github.com/user-attachments/assets/9aaa7e53-8805-4d2f-8866-01a8c22d1ac7)
 
--   지금 확인해보니 📊 Executed Steps (5 steps), 📚 Retrieved Context 이 두 부분 toggle하면 더 자세한 내용 볼 수 있도록 하는게 의도였는데 모든 출력이 반영이 안되었음...
--   그래서 저 두 부분은 굳이 열지 말고 plan과 마지막 출력 결과물만 보여주는거에 신경쓰면 될 듯.
+    -   📊 Executed Steps (5 steps) : 전체 step이 어떤 plan을 따라갔는지 확인 가능. 하지만 그 plan에 대한 step 결과가 어떤 것인지까지는 출력이 안 나옴.
+    -   지금 확인해보니 📊 Executed Steps (5 steps), 📚 Retrieved Context 이 두 부분 toggle하면 더 자세한 내용 볼 수 있도록 하는게 의도였는데 모든 출력이 반영이 안되었음...
+    -   그래서 저 두 부분은 굳이 열지 말고 plan과 마지막 출력 결과물만 보여주는거에 신경쓰면 될 듯.
 
 6. Option
 
