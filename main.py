@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse, json, sys, ast
 from pathlib import Path
-from rag_pipeline.graph_builder import build_graph
+from rag_pipeline.graph_builder import build_graph, visualize_graph
 from rag_pipeline import config
 from rag_pipeline.graph_state import GraphState
 from langchain.schema import Document
@@ -36,6 +36,8 @@ def run(
     )
     init_state: GraphState = {"question": [query], "messages": [("user", query)]}
     final_state = graph.invoke(init_state)
+
+    visualize_graph(graph)
 
     final_state_converted = convert_to_string(final_state)
 

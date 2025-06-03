@@ -11,6 +11,8 @@ from langchain_openai import ChatOpenAI
 
 from rag_pipeline import utils, retrievers, config
 from langchain.schema import Document
+import nest_asyncio
+from pathlib import Path
 
 
 class PlanExecuteState(TypedDict):
@@ -127,10 +129,16 @@ Update your plan accordingly. If no more steps are needed and you can return to 
     async def plan_step(self, state: PlanExecuteState) -> Dict[str, Any]:
         """Create initial plan for the complex question"""
         print(f"📋 Creating plan for: {state['input']}")
+        print(f"📋 Maximum allowed steps: {config.MAX_PLAN_STEPS}")
         
         try:
-            plan_result = await self.planner.ainvoke({"input": state["input"]})
+            plan_result = await self.planner.ainvoke({"input": state["input"]})#, "max_plan_steps": config.MAX_PLAN_STEPS})
             steps = plan_result.steps
+            
+            # 🔥 config에서 가져온 단계 수 제한 적용
+            if len(steps) > config.MAX_PLAN_STEPS:
+                print(f"   Warning: Plan has {len(steps)} steps, limiting to {config.MAX_PLAN_STEPS} for efficiency")
+                steps = steps[:config.MAX_PLAN_STEPS]
             
             print(f"   Plan created with {len(steps)} steps:")
             for i, step in enumerate(steps, 1):
@@ -145,12 +153,14 @@ Update your plan accordingly. If no more steps are needed and you can return to 
             
         except Exception as e:
             print(f"Error in planning: {e}")
-            # Fallback plan
+            # 🔥 폴백 계획은 3단계로 제한
             fallback_steps = [
                 f"Search for fundamental concepts related to: {state['input']}",
                 f"Find relevant formulas and equations for: {state['input']}",
                 f"Analyze the gathered information to solve: {state['input']}"
             ]
+            # 폴백도 제한에 맞춤
+            fallback_steps = fallback_steps[:config.MAX_PLAN_STEPS]
             return {
                 "plan": fallback_steps,
                 "current_step_index": 0,
@@ -192,7 +202,7 @@ Update your plan accordingly. If no more steps are needed and you can return to 
             else:
                 step_result = f"No relevant information found for: {current_step}"
             
-            print(f"   ✅ Step completed: {step_result[:100]}...")
+            print(f"   ✅ Step completed: Retrieved information for step {current_index + 1}")
             
             # Update state
             all_context_docs = state.get("all_context_docs", [])
@@ -306,14 +316,15 @@ Provide a concise summary of the key information that's relevant to this step.""
             return f"Retrieved information for step: {step}"
     
     async def replan_step(self, state: PlanExecuteState) -> Dict[str, Any]:
-        """Evaluate progress and decide next action - 무한 루프 방지 로직 추가"""
+        """Evaluate progress and decide next action - config 기반 조기 종료"""
         print("🤔 Evaluating progress and replanning...")
         
         try:
-            # 🔥 무한 루프 방지: 이미 충분한 단계를 실행했다면 종료
             past_steps = state.get("past_steps", [])
-            if len(past_steps) >= 3:  # 3단계 이상 실행했으면 종료
-                print("✅ Sufficient steps completed, generating final response")
+            
+            # 🔥 config 기반 조기 종료 조건
+            if len(past_steps) >= config.MAX_PLAN_STEPS:
+                print(f"✅ Maximum steps reached ({config.MAX_PLAN_STEPS}+ steps), generating final response")
                 final_response = await self._generate_final_response(state)
                 return {"response": final_response}
             
@@ -333,7 +344,8 @@ Provide a concise summary of the key information that's relevant to this step.""
             replan_input = {
                 "input": state["input"],
                 "plan": "\n".join([f"{i+1}. {step}" for i, step in enumerate(state["plan"])]),
-                "past_steps": past_steps_str
+                "past_steps": past_steps_str,
+                #"max_plan_steps": config.MAX_PLAN_STEPS
             }
             
             output = await self.replanner.ainvoke(replan_input)
@@ -342,12 +354,16 @@ Provide a concise summary of the key information that's relevant to this step.""
                 print("✅ Ready to provide final response")
                 return {"response": output.action.response}
             else:
-                # 🔥 재계획 시에도 제한 조건 추가
+                # 🔥 재계획된 단계도 config 기반 제한
                 new_steps = output.action.steps
-                if len(new_steps) > 3:  # 너무 많은 단계 방지
-                    new_steps = new_steps[:3]
+                if len(new_steps) > config.MAX_PLAN_STEPS:
+                    print(f"   Warning: Replanned {len(new_steps)} steps, limiting to {config.MAX_PLAN_STEPS}")
+                    new_steps = new_steps[:config.MAX_PLAN_STEPS]
                     
                 print(f"🔄 Replanning with {len(new_steps)} new steps")
+                for i, step in enumerate(new_steps, 1):
+                    print(f"   {i}. {step}")
+                
                 return {
                     "plan": new_steps,
                     "current_step_index": 0
@@ -424,7 +440,11 @@ Provide a comprehensive final answer to the original question."""
         """Process a complex query using plan-and-execute approach"""
         
         if config_dict is None:
-            config_dict = {"recursion_limit": 8}  # 🔥 recursion_limit 증가
+            # 🔥 recursion_limit을 config 기반으로 설정
+            # MAX_PLAN_STEPS * 2 + 여유분으로 설정 (planner + agent + replan 순환 고려)
+            recursion_limit = config.MAX_PLAN_STEPS * 2 + 4
+            config_dict = {"recursion_limit": recursion_limit}
+            print(f"🔧 Setting recursion_limit to {recursion_limit} (based on MAX_PLAN_STEPS={config.MAX_PLAN_STEPS})")
         
         initial_state = {
             "input": query,
@@ -493,19 +513,142 @@ Provide a comprehensive final answer to the original question."""
                     "total_steps": 0
                 }
 
+    def visualize_graph(self, output_path: Path = None, return_image: bool = False):
+        """
+        Plan-Execute LangGraph를 시각화합니다.
+        
+        Args:
+            output_path: 이미지를 저장할 경로 (None이면 기본 경로 사용)
+            return_image: True면 이미지 바이트를 반환, False면 파일로 저장
+            
+        Returns:
+            return_image=True인 경우 이미지 바이트, 아니면 None
+        """
+        try:
+            # nest_asyncio 적용 (Jupyter/IPython 환경에서 필요)
+            nest_asyncio.apply()
+            
+            if output_path is None:
+                # 기본 출력 경로 설정
+                output_dir = Path(config.OUTPUT_DIR)
+                output_dir.mkdir(parents=True, exist_ok=True)
+                output_path = output_dir / "plan_execute_graph.png"
+            
+            print(f"📊 Generating Plan-Execute graph visualization...")
+            print(f"   Output path: {output_path}")
+            
+            if return_image:
+                # 이미지 바이트 반환
+                image_bytes = self.graph.get_graph(xray=True).draw_mermaid_png()
+                print(f"   ✅ Graph visualization generated (bytes)")
+                return image_bytes
+            else:
+                # 파일로 저장
+                self.graph.get_graph(xray=True).draw_mermaid_png(
+                    output_file_path=str(output_path)
+                )
+                print(f"   ✅ Graph visualization saved to: {output_path}")
+                return None
+                
+        except Exception as e:
+            print(f"   ❌ Error generating graph visualization: {e}")
+            print(f"   Error type: {type(e).__name__}")
+            
+            # 텍스트 기반 그래프 구조 출력
+            print("\n   📋 Text-based graph structure:")
+            print("   START -> planner -> agent -> replan -> [agent|END]")
+            print("   ")
+            print("   Nodes:")
+            print("   - planner: Creates initial execution plan")
+            print("   - agent: Executes individual steps with retrieval")
+            print("   - replan: Evaluates progress and decides next action")
+            print("   ")
+            print("   Edges:")
+            print("   - START -> planner (entry point)")
+            print("   - planner -> agent (execute first step)")
+            print("   - agent -> replan (evaluate progress)")
+            print("   - replan -> agent|END (conditional: continue or finish)")
+            
+            return None
+
+    def get_graph_info(self) -> Dict[str, Any]:
+        """
+        그래프 구조 정보를 반환합니다.
+        
+        Returns:
+            그래프 구조에 대한 정보 딕셔너리
+        """
+        try:
+            graph_dict = self.graph.get_graph().to_json()
+            
+            # 노드 정보 추출
+            nodes = []
+            if 'nodes' in graph_dict:
+                for node in graph_dict['nodes']:
+                    nodes.append({
+                        'id': node.get('id', 'unknown'),
+                        'type': node.get('type', 'unknown')
+                    })
+            
+            # 엣지 정보 추출
+            edges = []
+            if 'edges' in graph_dict:
+                for edge in graph_dict['edges']:
+                    edges.append({
+                        'source': edge.get('source', 'unknown'),
+                        'target': edge.get('target', 'unknown')
+                    })
+            
+            return {
+                'total_nodes': len(nodes),
+                'total_edges': len(edges),
+                'nodes': nodes,
+                'edges': edges,
+                'max_plan_steps': config.MAX_PLAN_STEPS,
+                'graph_structure': "START -> planner -> agent -> replan -> [agent|END]"
+            }
+            
+        except Exception as e:
+            print(f"Error getting graph info: {e}")
+            return {
+                'total_nodes': 3,
+                'total_edges': 4,
+                'nodes': [
+                    {'id': 'planner', 'type': 'plan_step'},
+                    {'id': 'agent', 'type': 'execute_step'}, 
+                    {'id': 'replan', 'type': 'replan_step'}
+                ],
+                'edges': [
+                    {'source': 'START', 'target': 'planner'},
+                    {'source': 'planner', 'target': 'agent'},
+                    {'source': 'agent', 'target': 'replan'},
+                    {'source': 'replan', 'target': 'agent|END'}
+                ],
+                'max_plan_steps': config.MAX_PLAN_STEPS,
+                'graph_structure': "START -> planner -> agent -> replan -> [agent|END]"
+            }
+
 # plan_execute_langgraph.py 수정 - 동기식 래퍼 개선
 def process_complex_query_with_langgraph_plan_execute(
     original_query: str,
     retrieval_type: str = None,
     hybrid_weights: List[float] = None,
-    max_steps: int = 5
+    max_steps: int = None  # 🔥 기본값을 None으로 변경
 ) -> Dict[str, Any]:
-    """동기식 래퍼 - 이벤트 루프 처리 개선"""
+    """동기식 래퍼 - config 기반 max_steps 설정"""
     import asyncio
     
     async def _async_process():
         agent = PlanExecuteLangGraph()
-        config_dict = {"recursion_limit": max_steps}
+        
+        # 🔥 max_steps가 제공되지 않으면 config에서 가져옴
+        if max_steps is None:
+            effective_max_steps = config.MAX_PLAN_STEPS * 2 + 4
+        else:
+            effective_max_steps = max_steps
+            
+        config_dict = {"recursion_limit": effective_max_steps}
+        print(f"🔧 Using max_steps (recursion_limit): {effective_max_steps}")
         
         return await agent.process_query(
             original_query, 

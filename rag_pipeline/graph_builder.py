@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph
 from rag_pipeline.graph_state import GraphState
 from rag_pipeline import nodes
 from typing import List
+import nest_asyncio
 
 
 def build_graph(
@@ -73,3 +74,13 @@ def build_graph(
     g.add_edge("plan_and_execute", "__end__")
 
     return g.compile()
+
+
+def visualize_graph(graph: StateGraph, output_path: Path = Path("./graph.png")):
+    """Visualize the graph and save to output_path"""
+
+    nest_asyncio.apply() 
+
+    graph.get_graph().draw_mermaid_png(
+        output_file_path=output_path,
+    )

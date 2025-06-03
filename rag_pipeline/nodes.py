@@ -190,16 +190,17 @@ def node_plan_and_execute(state: GraphState) -> GraphState:
         retrieval_type = config.RETRIEVAL_TYPE
 
         print(f"Starting LangGraph Plan and Execute for: {query}")
-        print(
-            f"Using retrieval_type: {retrieval_type}, hybrid_weights: {hybrid_weights}"
-        )
+        print(f"Using retrieval_type: {retrieval_type}, hybrid_weights: {hybrid_weights}")
+        print(f"Maximum plan steps: {config.MAX_PLAN_STEPS}")
 
         # LangGraph 기반 Plan and Execute 방식으로 복잡한 질문 처리
+        # 🔥 max_steps를 config 기반으로 설정
+        recursion_limit = config.MAX_PLAN_STEPS * 2 + 4
         result = plan_execute_langgraph.process_complex_query_with_langgraph_plan_execute(
             original_query=query,
             retrieval_type=retrieval_type,
             hybrid_weights=hybrid_weights,
-            max_steps=8,  # 🔥 recursion_limit와 맞춤
+            max_steps=recursion_limit,
         )
 
         # 🔥 모든 정보를 완전히 처리하여 반환

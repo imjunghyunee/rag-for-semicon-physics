@@ -51,6 +51,9 @@ RETRIEVAL_TYPE: str = str(
     os.getenv("RETRIEVAL_TYPE", "original_query")
 )  # original_query, hyde, summary 중에 선택
 
+# ----- Plan-and-Execute 설정 -----
+MAX_PLAN_STEPS: int = int(os.getenv("MAX_PLAN_STEPS", 5))  # Plan-and-Execute에서 최대 허용 단계 수
+
 # ----- 출력 디렉토리 설정 -----
 OUTPUT_DIR: str = os.getenv("OUTPUT_DIR", "./output")
 OUTPUT_PATH = _validate_path(Path(OUTPUT_DIR), "Output directory")
@@ -65,4 +68,5 @@ print(f"  - Model: {OPENAI_MODEL}")
 print(f"  - TOP_K: {TOP_K}")
 print(f"  - SIM_THRESHOLD: {SIM_THRESHOLD}")
 print(f"  - RERANK: {RERANK}")
+print(f"  - MAX_PLAN_STEPS: {MAX_PLAN_STEPS}")
 print(f"  - Output directory: {OUTPUT_PATH}")
