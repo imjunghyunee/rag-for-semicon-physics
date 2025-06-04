@@ -25,9 +25,9 @@ def _validate_path(path: Path, description: str) -> Path:
 # ----- 벡터 DB 및 임베딩 설정 -----
 EMBED_MODEL_NAME: str = "jinaai/jina-embeddings-v3"
 RERANKER_NAME: str = "BAAI/bge-reranker-v2-m3"
-CONTENT_DB_PATH: Path = Path(
+CONTENT_DB_PATH: Path = Path(os.getenv('vectordb_path',
     "C:/Users/user/Desktop/KU/JH/rag-for-semicon-physics/vectordb/faiss"
-)
+))
 
 # ----- OpenAI API 설정 -----
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")

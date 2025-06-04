@@ -93,7 +93,12 @@ def pdf_to_docs(file_path: Path) -> List[Document]:
     combined_texts = "\n".join(all_texts)
 
     # Split extracted text
-    headers_to_split_on = [("#", "Header1"), ...]
+    headers_to_split_on = [
+        ("#", "Header1"),
+        ("##", "Header2"),
+        ("###", "Header3"),
+        ("####", "Header4")
+    ]
     md_splitter = MarkdownHeaderTextSplitter(
         headers_to_split=headers_to_split_on, strip_headers=False
     )
@@ -108,14 +113,14 @@ def img_to_docs(file_path: Path) -> List[Document]:
     # Text Extraction
     all_texts = []
 
-    for filename in sorted(os.listdir(file_path), key=get_page_number):
-        img_path = os.path.join(file_path, filename)
-        if not os.path.isfile(img_path):
-            continue
-
+    # Check if the path is a single file or directory
+    if file_path.is_file():
+        # Handle single image file
+        print(f"Processing single image file: {file_path}")
+        
         # Encode image
-        image_url = encode_image(img_path, image_size=(837, 1012))
-        _, image_ext = os.path.splitext(filename)
+        image_url = encode_image(str(file_path), image_size=(837, 1012))
+        _, image_ext = os.path.splitext(file_path.name)
         image_ext = image_ext.lstrip(".")  # e.g. png, jpg
         image_url = f"data:image/{image_ext};base64,{image_url}"
 
@@ -139,13 +144,58 @@ def img_to_docs(file_path: Path) -> List[Document]:
         )
         text = response.choices[0].message.content
 
-        print(f"Successfully extracted text from: {filename}\n")
+        print(f"Successfully extracted text from: {file_path.name}\n")
         all_texts.append(f"{text.strip()}\n")
+        
+    elif file_path.is_dir():
+        # Handle directory of images (original logic)
+        print(f"Processing image directory: {file_path}")
+        
+        for filename in sorted(os.listdir(file_path), key=get_page_number):
+            img_path = os.path.join(file_path, filename)
+            if not os.path.isfile(img_path):
+                continue
+
+            # Encode image
+            image_url = encode_image(img_path, image_size=(837, 1012))
+            _, image_ext = os.path.splitext(filename)
+            image_ext = image_ext.lstrip(".")  # e.g. png, jpg
+            image_url = f"data:image/{image_ext};base64,{image_url}"
+
+            response = client.chat.completions.create(
+                model=config.OPENAI_MODEL,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Extract all the text from the image:",
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": image_url},
+                            },
+                        ],
+                    }
+                ],
+            )
+            text = response.choices[0].message.content
+
+            print(f"Successfully extracted text from: {filename}\n")
+            all_texts.append(f"{text.strip()}\n")
+    else:
+        raise ValueError(f"Path {file_path} is neither a file nor a directory")
 
     combined_texts = "\n".join(all_texts)
 
     # Split extracted text
-    headers_to_split_on = [("#", "Header1"), ...]
+    headers_to_split_on = [
+        ("#", "Header1"),
+        ("##", "Header2"),
+        ("###", "Header3"),
+        ("####", "Header4")
+    ]
     md_splitter = MarkdownHeaderTextSplitter(
         headers_to_split=headers_to_split_on, strip_headers=False
     )

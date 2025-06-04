@@ -7,6 +7,11 @@ import json
 from typing import Dict, Any, List, Tuple
 import asyncio
 import traceback
+import tempfile
+import shutil
+import uuid
+from datetime import datetime
+import concurrent.futures
 
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.append(str(Path(__file__).parent))
@@ -107,6 +112,178 @@ def initialize_session_state():
         st.session_state.plan_results = []
     if "final_answer" not in st.session_state:
         st.session_state.final_answer = None
+    if "uploaded_files" not in st.session_state:
+        st.session_state.uploaded_files = {"pdf": None, "images": []}
+    if "temp_dir" not in st.session_state:
+        st.session_state.temp_dir = None
+
+
+def save_uploaded_files(uploaded_files, file_type="image"):
+    """업로드된 파일들을 임시 디렉토리에 저장"""
+    if not uploaded_files:
+        return None
+    
+    # 임시 디렉토리 생성
+    if st.session_state.temp_dir is None:
+        st.session_state.temp_dir = tempfile.mkdtemp(prefix="streamlit_rag_")
+    
+    temp_dir = Path(st.session_state.temp_dir)
+    
+    if file_type == "pdf":
+        # PDF 파일 하나만 처리
+        pdf_file = uploaded_files
+        pdf_path = temp_dir / pdf_file.name
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_file.getbuffer())
+        return pdf_path
+    
+    elif file_type == "image":
+        # 여러 이미지 파일 처리
+        if len(uploaded_files) == 1:
+            # 단일 이미지 파일
+            image_file = uploaded_files[0]
+            image_path = temp_dir / image_file.name
+            with open(image_path, "wb") as f:
+                f.write(image_file.getbuffer())
+            return image_path
+        else:
+            # 여러 이미지 파일들을 하나의 디렉토리에 저장
+            images_dir = temp_dir / "images"
+            images_dir.mkdir(exist_ok=True)
+            
+            for i, image_file in enumerate(uploaded_files):
+                image_path = images_dir / f"{i:03d}_{image_file.name}"
+                with open(image_path, "wb") as f:
+                    f.write(image_file.getbuffer())
+            
+            return images_dir
+    
+    return None
+
+
+def cleanup_temp_files():
+    """임시 파일들 정리"""
+    if st.session_state.temp_dir and Path(st.session_state.temp_dir).exists():
+        try:
+            shutil.rmtree(st.session_state.temp_dir)
+            st.session_state.temp_dir = None
+            print("Temporary files cleaned up")
+        except Exception as e:
+            print(f"Error cleaning up temp files: {e}")
+
+
+def display_file_upload_section():
+    """파일 업로드 섹션 표시"""
+    st.markdown("### 📁 File Upload (Optional)")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**📄 PDF Document**")
+        uploaded_pdf = st.file_uploader(
+            "Upload a PDF file for analysis",
+            type=['pdf'],
+            key="pdf_uploader",
+            help="Upload a PDF document to extract text and analyze with your question"
+        )
+        
+        if uploaded_pdf:
+            st.success(f"✅ PDF uploaded: {uploaded_pdf.name}")
+            st.session_state.uploaded_files["pdf"] = uploaded_pdf
+        else:
+            st.session_state.uploaded_files["pdf"] = None
+    
+    with col2:
+        st.markdown("**🖼️ Images**")
+        uploaded_images = st.file_uploader(
+            "Upload image(s) for analysis",
+            type=['png', 'jpg', 'jpeg', 'bmp', 'tiff'],
+            accept_multiple_files=True,
+            key="image_uploader",
+            help="Upload one or more images to extract text and analyze with your question"
+        )
+        
+        if uploaded_images:
+            st.success(f"✅ {len(uploaded_images)} image(s) uploaded")
+            for img in uploaded_images:
+                st.caption(f"📸 {img.name}")
+            st.session_state.uploaded_files["images"] = uploaded_images
+        else:
+            st.session_state.uploaded_files["images"] = []
+    
+    # 파일 처리 상태 표시
+    if st.session_state.uploaded_files["pdf"] or st.session_state.uploaded_files["images"]:
+        st.info("💡 Files will be processed together with your question when submitted.")
+        
+        # 파일 미리보기 옵션
+        with st.expander("🔍 File Preview", expanded=False):
+            if st.session_state.uploaded_files["pdf"]:
+                st.markdown("**PDF File:**")
+                st.text(f"📄 {st.session_state.uploaded_files['pdf'].name}")
+                st.text(f"📏 Size: {st.session_state.uploaded_files['pdf'].size:,} bytes")
+            
+            if st.session_state.uploaded_files["images"]:
+                st.markdown("**Image Files:**")
+                for i, img in enumerate(st.session_state.uploaded_files["images"], 1):
+                    col_img1, col_img2 = st.columns([3, 1])
+                    with col_img1:
+                        st.image(img, caption=f"{i}. {img.name}", width=200)
+                    with col_img2:
+                        st.text(f"📏 Size: {img.size:,} bytes")
+
+
+async def process_query_with_files(query: str, pdf_file=None, image_files=None):
+    """파일과 함께 쿼리 처리 - 백그라운드에서 처리하고 일반적인 흐름으로 결과 표시"""
+    
+    # 파일 저장 (백그라운드에서 처리)
+    pdf_path = None
+    img_path = None
+    
+    try:
+        if pdf_file:
+            pdf_path = save_uploaded_files(pdf_file, "pdf")
+            print(f"PDF saved to: {pdf_path}")
+        
+        if image_files:
+            img_path = save_uploaded_files(image_files, "image")
+            print(f"Images saved to: {img_path}")
+        
+        # 그래프 빌드 (백그라운드에서 처리)
+        graph = build_graph(
+            pdf_path=pdf_path,
+            img_path=img_path,
+            retrieval_type=config.RETRIEVAL_TYPE,
+            hybrid_weights=[config.HYBRID_WEIGHT, 1 - config.HYBRID_WEIGHT]
+        )
+        
+        # 초기 상태 설정
+        init_state: GraphState = {"question": [query], "messages": [("user", query)]}
+        
+        # LangGraph 실행 - 일반적인 스트리밍 방식과 동일하게 처리
+        async for event in graph.astream(init_state):
+            for node_name, node_output in event.items():
+                if node_name == "__end__":
+                    continue
+                    
+                # 각 노드의 실행 결과를 실시간으로 표시 (파일 처리 여부와 관계없이 동일)
+                await display_node_execution(node_name, node_output, query)
+                    
+                # 잠시 대기 (사용자가 읽을 수 있도록)
+                await asyncio.sleep(1)
+        
+        # 최종 상태 가져오기
+        final_state = graph.invoke(init_state)
+        
+        # 최종 결과 표시 (일반적인 방식과 동일)
+        display_final_results(final_state, query)
+            
+        return final_state
+                
+    except Exception as e:
+        st.error(f"❌ Error processing query with files: {str(e)}")
+        print(f"❌ Full error traceback:")
+        print(traceback.format_exc())
+        return None
 
 
 def display_complexity_result(complexity: str):
@@ -466,8 +643,141 @@ async def display_node_execution(node_name: str, node_output: Dict[str, Any], qu
                           unsafe_allow_html=True)
 
 
+def save_graph_state_to_output(final_state: Dict[str, Any], query: str) -> str:
+    """최종 GraphState를 output 디렉토리에 저장"""
+    try:
+        # 출력 디렉토리 확인
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # GraphState 형식에 맞춰 데이터 구성
+        graph_state_dict = {
+            "question": [query],
+            "explanation": final_state.get("explanation", ""),
+            "context": final_state.get("context", []),
+            "filtered_context": final_state.get("filtered_context", []),
+            "examples": final_state.get("examples", ""),
+            "answer": final_state.get("answer", ""),
+            "messages": final_state.get("messages", []),
+            "scores": final_state.get("scores", []),
+            "filtered_scores": final_state.get("filtered_scores", []),
+            "subquestions": final_state.get("subquestions", []),
+            "subquestion_results": final_state.get("subquestion_results", []),
+            "combined_context": final_state.get("combined_context", ""),
+            "plan": final_state.get("plan", []),
+            "executed_steps": final_state.get("executed_steps", []),
+            "retrieval_type": config.RETRIEVAL_TYPE,
+            "hybrid_weights": [config.HYBRID_WEIGHT, 1 - config.HYBRID_WEIGHT],
+            "next": final_state.get("next", "")
+        }
+        
+        # 파일명 생성 (타임스탬프 + UUID)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"graph_state_{timestamp}_{unique_id}.json"
+        file_path = output_dir / filename
+        
+        # JSON으로 저장 (직렬화 가능한 형태로 변환)
+        serializable_state = convert_to_serializable(graph_state_dict)
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(serializable_state, f, ensure_ascii=False, indent=2)
+        
+        print(f"✅ Graph state saved to: {file_path}")
+        return str(file_path)
+        
+    except Exception as e:
+        print(f"❌ Error saving graph state: {e}")
+        return ""
+
+
+def convert_to_serializable(obj):
+    """객체를 JSON 직렬화 가능한 형태로 변환"""
+    if hasattr(obj, 'page_content'):  # Document 객체
+        return {
+            "page_content": obj.page_content,
+            "metadata": getattr(obj, 'metadata', {})
+        }
+    elif hasattr(obj, 'content'):  # Message 객체
+        return obj.content
+    elif isinstance(obj, list):
+        return [convert_to_serializable(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_to_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, tuple):
+        return [convert_to_serializable(item) for item in obj]
+    else:
+        return obj
+
+
+def save_graph_visualizations(final_state: Dict[str, Any], query: str) -> List[str]:
+    """두 가지 그래프를 시각화하여 저장"""
+    saved_files = []
+    
+    try:
+        # 출력 디렉토리 확인
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # 1. Main Graph (graph_builder.py에서 생성된 그래프) 시각화
+        try:
+            print("📊 Generating main graph visualization...")
+            
+            # 동일한 설정으로 그래프 재생성
+            pdf_file = st.session_state.uploaded_files.get("pdf")
+            image_files = st.session_state.uploaded_files.get("images", [])
+            
+            pdf_path = None
+            img_path = None
+            if pdf_file:
+                pdf_path = save_uploaded_files(pdf_file, "pdf")
+            if image_files:
+                img_path = save_uploaded_files(image_files, "image")
+            
+            main_graph = build_graph(
+                pdf_path=pdf_path,
+                img_path=img_path,
+                retrieval_type=config.RETRIEVAL_TYPE,
+                hybrid_weights=[config.HYBRID_WEIGHT, 1 - config.HYBRID_WEIGHT]
+            )
+            
+            main_graph_path = output_dir / f"main_graph_{timestamp}.png"
+            main_graph.get_graph().draw_mermaid_png(output_file_path=str(main_graph_path))
+            
+            saved_files.append(str(main_graph_path))
+            print(f"   ✅ Main graph saved to: {main_graph_path}")
+            
+        except Exception as e:
+            print(f"   ❌ Error saving main graph: {e}")
+        
+        # 2. Plan-Execute Graph 시각화 (복잡한 질문인 경우만)
+        if final_state.get("executed_steps") or final_state.get("plan"):
+            try:
+                print("📊 Generating plan-execute graph visualization...")
+                
+                from rag_pipeline.plan_execute_langgraph import PlanExecuteLangGraph
+                plan_execute_agent = PlanExecuteLangGraph()
+                
+                plan_execute_graph_path = output_dir / f"plan_execute_graph_{timestamp}.png"
+                plan_execute_agent.visualize_graph(output_path=plan_execute_graph_path)
+                
+                saved_files.append(str(plan_execute_graph_path))
+                print(f"   ✅ Plan-execute graph saved to: {plan_execute_graph_path}")
+                
+            except Exception as e:
+                print(f"   ❌ Error saving plan-execute graph: {e}")
+        
+        return saved_files
+        
+    except Exception as e:
+        print(f"❌ Error in graph visualization: {e}")
+        return []
+
+
 def display_final_results(final_state: Dict[str, Any], query: str):
-    """최종 결과 표시"""
+    """최종 결과 표시 - 저장 기능을 백그라운드로 이동"""
     st.markdown("---")
     st.markdown("### 🎉 Final Results")
     
@@ -502,6 +812,23 @@ def display_final_results(final_state: Dict[str, Any], query: str):
         if scores and len(scores) > 0:
             avg_score = sum(scores) / len(scores)
             st.metric("🎯 Avg Similarity", f"{avg_score:.3f}")
+    
+    # 🔥 백그라운드 자동 저장 (UI 없이)
+    try:
+        # Graph State 저장
+        saved_state_file = save_graph_state_to_output(final_state, query)
+        if saved_state_file:
+            print(f"✅ Graph state auto-saved to: {saved_state_file}")
+        
+        # Graph 시각화 저장
+        saved_graph_files = save_graph_visualizations(final_state, query)
+        if saved_graph_files:
+            print(f"✅ Graph visualizations auto-saved:")
+            for graph_file in saved_graph_files:
+                print(f"   📈 {Path(graph_file).name}")
+        
+    except Exception as e:
+        print(f"❌ Error in background auto-save: {e}")
 
 
 def main():
@@ -529,10 +856,38 @@ def main():
         3. 💡 Final Answer
         """)
         
+        st.markdown("### 📁 File Processing")
+        st.markdown("""
+        **Supported Files:**
+        - 📄 PDF documents
+        - 🖼️ Images (PNG, JPG, etc.)
+        
+        **Processing Flow:**
+        1. File Upload
+        2. Text Extraction (OCR/PDF parsing)
+        3. Content Integration
+        4. Query Processing
+        """)
+        
+        # 🔥 자동 저장 정보 추가
+        st.markdown("### 💾 Auto-Save")
+        st.markdown("""
+        **Automatic Background Saving:**
+        - 📄 Graph State (JSON)
+        - 📊 Graph Visualizations (PNG/TXT)
+        - 📁 Output Directory: `./output/`
+        """)
+        
         if st.button("🔄 Reset Session"):
+            cleanup_temp_files()
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.rerun()
+    
+    # 파일 업로드 섹션
+    display_file_upload_section()
+    
+    st.markdown("---")
     
     # 메인 채팅 인터페이스
     st.markdown("### 💬 Ask a Question")
@@ -551,24 +906,33 @@ def main():
         
         # 어시스턴트 응답 시작
         with st.chat_message("assistant"):
-            st.markdown("### 🚀 Processing Your Question")
-            st.markdown(f"**Query:** {prompt}")
+            # 파일 처리 상태 확인 (백그라운드에서)
+            pdf_file = st.session_state.uploaded_files.get("pdf")
+            image_files = st.session_state.uploaded_files.get("images", [])
             
-            # LangGraph 스트리밍 실행
+            # 처리 실행
             try:
                 # 비동기 처리를 위한 래퍼
                 try:
                     current_loop = asyncio.get_running_loop()
                     # 이미 루프가 실행 중이면 새 스레드에서 실행
-                    import concurrent.futures
                     
                     def run_async_in_thread():
                         new_loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(new_loop)
                         try:
-                            return new_loop.run_until_complete(
-                                process_query_with_langgraph_streaming(prompt)
-                            )
+                            if pdf_file or image_files:
+                                return new_loop.run_until_complete(
+                                    process_query_with_files(prompt, pdf_file, image_files)
+                                )
+                            else:
+                                return new_loop.run_until_complete(
+                                    process_query_with_langgraph_streaming(prompt)
+                                )
+                        except Exception as thread_error:
+                            print(f"❌ Error in thread execution: {thread_error}")
+                            print(traceback.format_exc())
+                            raise thread_error
                         finally:
                             new_loop.close()
                     
@@ -578,22 +942,86 @@ def main():
                         
                 except RuntimeError:
                     # 실행 중인 루프가 없으면 직접 실행
-                    result = asyncio.run(process_query_with_langgraph_streaming(prompt))
+                    try:
+                        if pdf_file or image_files:
+                            result = asyncio.run(process_query_with_files(prompt, pdf_file, image_files))
+                        else:
+                            result = asyncio.run(process_query_with_langgraph_streaming(prompt))
+                    except Exception as direct_error:
+                        print(f"❌ Error in direct execution: {direct_error}")
+                        print(traceback.format_exc())
+                        raise direct_error
                 
+                # 결과 처리 및 표시
                 if result:
                     answer = result.get("answer", "No answer generated")
                     complexity = "Complex" if result.get("executed_steps") else "Simple"
-                    response_content = f"**Question Complexity:** {complexity}\n\n**Answer:** {answer}"
+                    
+                    # 파일 처리 정보는 간단하게만 표시 (선택적)
+                    file_info = ""
+                    if pdf_file or image_files:
+                        file_count = (1 if pdf_file else 0) + len(image_files)
+                        file_info = f" (with {file_count} uploaded file{'s' if file_count > 1 else ''})"
+                    
+                    response_content = f"**Question Complexity:** {complexity}{file_info}\n\n**Answer:** {answer}"
+                    
+                    # 🔥 백그라운드 자동 저장 (사용자에게 보이지 않음)
+                    try:
+                        # Graph State 저장
+                        saved_state_file = save_graph_state_to_output(result, prompt)
+                        if saved_state_file:
+                            print(f"🔄 Background: Graph state saved to {Path(saved_state_file).name}")
+                        
+                        # Graph 시각화 저장
+                        saved_graph_files = save_graph_visualizations(result, prompt)
+                        if saved_graph_files:
+                            print(f"🔄 Background: {len(saved_graph_files)} graph visualization(s) saved")
+                            
+                    except Exception as save_error:
+                        print(f"❌ Background save error: {save_error}")
+                    
+                    # 파일 업로드 상태 자동 정리
+                    if pdf_file or image_files:
+                        st.session_state.uploaded_files = {"pdf": None, "images": []}
+                        
                 else:
                     response_content = "**Error:** Failed to process question"
                     
             except Exception as e:
-                st.error(f"Error processing question: {str(e)}")
+                error_msg = f"Error processing question: {str(e)}"
+                st.error(error_msg)
+                print(f"❌ {error_msg}")
+                print(f"❌ Full traceback:")
+                print(traceback.format_exc())
                 response_content = f"**Error:** {str(e)}"
+            
+            # 🔥 저장 관련 UI 완전 제거 - 대신 간단한 상태 표시만
+            st.markdown("---")
+            st.markdown("#### ℹ️ Session Info")
+            col_info1, col_info2, col_info3 = st.columns(3)
+            
+            with col_info1:
+                if st.button("🔄 Refresh", help="Refresh the interface"):
+                    st.rerun()
+            
+            with col_info2:
+                output_dir = Path(config.OUTPUT_DIR)
+                if output_dir.exists():
+                    file_count = len(list(output_dir.glob("*")))
+                    st.metric("📁 Output Files", file_count, help=f"Files in {output_dir}")
+                else:
+                    st.metric("📁 Output Files", 0)
+            
+            with col_info3:
+                if st.button("🗑️ Clear Files", help="Clear uploaded files"):
+                    cleanup_temp_files()
+                    st.session_state.uploaded_files = {"pdf": None, "images": []}
+                    st.rerun()
         
-        # 어시스턴트 메시지 추가
+        # 어시스턴트 메시지 저장
         st.session_state.messages.append({"role": "assistant", "content": response_content})
 
 
+# 🔥 메인 함수 호출 추가 - 이 부분이 누락되어 있었음!
 if __name__ == "__main__":
     main()

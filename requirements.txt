@@ -44,8 +44,8 @@ tiktoken>=0.3.0
 einops>=0.6.0
 rotary-embedding-torch>=0.2.0
 
-# Reranking models
-torch-audio>=2.0.0  # for advanced embedding models
+# # Reranking models
+# torch-audio>=2.0.0  # for advanced embedding models
 
 # Async and concurrency
 #asyncio  # built-in, but ensuring compatibility

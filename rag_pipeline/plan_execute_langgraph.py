@@ -522,7 +522,7 @@ Provide a comprehensive final answer to the original question."""
             return_image: True면 이미지 바이트를 반환, False면 파일로 저장
             
         Returns:
-            return_image=True인 경우 이미지 바이트, 아니면 None
+            return_image=True인 경우 이미지 바이트, 아니면 저장된 파일 경로
         """
         try:
             # nest_asyncio 적용 (Jupyter/IPython 환경에서 필요)
@@ -534,40 +534,41 @@ Provide a comprehensive final answer to the original question."""
                 output_dir.mkdir(parents=True, exist_ok=True)
                 output_path = output_dir / "plan_execute_graph.png"
             
-            print(f"📊 Generating Plan-Execute graph visualization...")
-            print(f"   Output path: {output_path}")
+            # 🔥 콘솔 로그만 유지 (간소화)
+            print(f"🔄 Background: Generating Plan-Execute graph -> {output_path.name}")
             
             if return_image:
                 # 이미지 바이트 반환
                 image_bytes = self.graph.get_graph(xray=True).draw_mermaid_png()
-                print(f"   ✅ Graph visualization generated (bytes)")
+                print(f"✅ Plan-Execute graph generated (bytes)")
                 return image_bytes
             else:
                 # 파일로 저장
                 self.graph.get_graph(xray=True).draw_mermaid_png(
                     output_file_path=str(output_path)
                 )
-                print(f"   ✅ Graph visualization saved to: {output_path}")
-                return None
+                print(f"✅ Plan-Execute graph saved: {output_path.name}")
+                return str(output_path)
                 
         except Exception as e:
-            print(f"   ❌ Error generating graph visualization: {e}")
-            print(f"   Error type: {type(e).__name__}")
+            print(f"❌ Plan-Execute graph generation failed: {type(e).__name__}")
             
-            # 텍스트 기반 그래프 구조 출력
-            print("\n   📋 Text-based graph structure:")
-            print("   START -> planner -> agent -> replan -> [agent|END]")
-            print("   ")
-            print("   Nodes:")
-            print("   - planner: Creates initial execution plan")
-            print("   - agent: Executes individual steps with retrieval")
-            print("   - replan: Evaluates progress and decides next action")
-            print("   ")
-            print("   Edges:")
-            print("   - START -> planner (entry point)")
-            print("   - planner -> agent (execute first step)")
-            print("   - agent -> replan (evaluate progress)")
-            print("   - replan -> agent|END (conditional: continue or finish)")
+            # 🔥 에러 시에도 파일 경로 반환 (빈 파일이라도)
+            if output_path and not return_image:
+                try:
+                    # 텍스트 기반 설명을 파일로 저장
+                    with open(output_path.with_suffix('.txt'), 'w', encoding='utf-8') as f:
+                        f.write("Plan-Execute Graph Structure:\n")
+                        f.write("START -> planner -> agent -> replan -> [agent|END]\n\n")
+                        f.write("Nodes:\n")
+                        f.write("- planner: Creates initial execution plan\n")
+                        f.write("- agent: Executes individual steps with retrieval\n")
+                        f.write("- replan: Evaluates progress and decides next action\n\n")
+                        f.write("Note: Visual graph generation failed, showing text description instead.\n")
+                    print(f"✅ Plan-Execute graph description saved: {output_path.with_suffix('.txt').name}")
+                    return str(output_path.with_suffix('.txt'))
+                except:
+                    pass
             
             return None
 

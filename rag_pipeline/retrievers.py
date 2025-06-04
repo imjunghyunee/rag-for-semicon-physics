@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 import torch
 import numpy as np
+import traceback
 from sentence_transformers import SentenceTransformer, util
 from rank_bm25 import BM25Okapi
 
@@ -203,13 +204,32 @@ def retrieve_from_file_embedding(
 def retrieve_from_img_embedding(
     query: HumanMessage | str, img_path: Path, top_k: int = config.TOP_K
 ) -> List[Document]:
+    """이미지에서 텍스트 추출 후 임베딩 검색 - 에러 처리 강화"""
+    print(f"🖼️ Starting image-based retrieval from: {img_path}")
+    
+    # Path 객체로 변환
+    if isinstance(img_path, str):
+        img_path = Path(img_path)
+    
+    # 파일/디렉토리 존재 확인
+    if not img_path.exists():
+        print(f"❌ Image path does not exist: {img_path}")
+        return []
+    
+    print(f"   Processing {'file' if img_path.is_file() else 'directory'}: {img_path}")
+    
     docs = utils.img_to_docs(img_path)
 
     if not docs:
-        return "Failed to extract text from image!"
+        print("❌ Failed to extract text from image!")
+        return []
+    else:
+        print(f"✅ Extracted {len(docs)} documents from image.")
 
     query_text = query.content if hasattr(query, "content") else query
     texts = [d.page_content for d in docs]
+
+    print("texts:", texts[:1])
 
     # Determine retrieval approach based on config
     hybrid_weight_check = config.HYBRID_WEIGHT < 1.0

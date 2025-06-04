@@ -28,9 +28,35 @@ def run(
     pdf_path: str | None = None,
     img_path: str | None = None,
 ):
+    # 경로 검증 추가
+    pdf_path_obj = None
+    img_path_obj = None
+    
+    if pdf_path:
+        pdf_path_obj = Path(pdf_path)
+        if not pdf_path_obj.exists():
+            print(f"Error: PDF file not found at {pdf_path_obj}")
+            return
+        if not pdf_path_obj.is_file():
+            print(f"Error: PDF path is not a file: {pdf_path_obj}")
+            return
+    
+    if img_path:
+        img_path_obj = Path(img_path)
+        if not img_path_obj.exists():
+            print(f"Error: Image path not found at {img_path_obj}")
+            return
+        # 이미지는 파일 또는 디렉토리 모두 허용
+        if not (img_path_obj.is_file() or img_path_obj.is_dir()):
+            print(f"Error: Image path is neither a file nor directory: {img_path_obj}")
+            return
+        
+        print(f"📁 Image input type: {'File' if img_path_obj.is_file() else 'Directory'}")
+        print(f"📁 Image path: {img_path_obj}")
+
     graph = build_graph(
-        Path(pdf_path) if pdf_path else None,
-        Path(img_path) if img_path else None,
+        pdf_path_obj,
+        img_path_obj,
         config.RETRIEVAL_TYPE,
         config.HYBRID_WEIGHT,
     )
