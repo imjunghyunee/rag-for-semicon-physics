@@ -47,3 +47,5 @@
     -   환경변수 설정하면 내 경우에는 터미널 재부팅, 컴퓨터 재부팅까지 필요했음.
 
 6. streamlit으로 실행 시 output 폴더에 graph_state_날짜.json으로 graph state가 저장되고 main_graph_, plan_execute_graph_로 그래프 시각화 이미지까지 저장.
+
+7. requirements.txt로 설치 시 # torch-audio>=2.0.0 부분 설치가 에러가 났었음 -> 주석 처리 완료.
