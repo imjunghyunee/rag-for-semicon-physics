@@ -233,7 +233,7 @@ def display_file_upload_section():
 
 
 async def process_query_with_files(query: str, pdf_file=None, image_files=None):
-    """파일과 함께 쿼리 처리 - 백그라운드에서 처리하고 일반적인 흐름으로 결과 표시"""
+    """파일과 함께 쿼리 처리 - PDF 에러 처리 강화"""
     
     # 파일 저장 (백그라운드에서 처리)
     pdf_path = None
@@ -241,14 +241,130 @@ async def process_query_with_files(query: str, pdf_file=None, image_files=None):
     
     try:
         if pdf_file:
+            print(f"📄 Processing PDF: {pdf_file.name}")
             pdf_path = save_uploaded_files(pdf_file, "pdf")
-            print(f"PDF saved to: {pdf_path}")
+            print(f"📁 PDF saved to: {pdf_path}")
+            
+            # PDF 처리 가능성 사전 체크
+            try:
+                # Poppler 설치 확인
+                import subprocess
+                result = subprocess.run(['pdftoppm', '-h'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode != 0:
+                    raise FileNotFoundError("Poppler not accessible")
+                    
+                print("✅ Poppler is available for PDF processing")
+                
+            except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as poppler_error:
+                error_msg = """
+❌ **PDF Processing Error: Poppler Not Found**
+
+PDF processing requires Poppler to be installed. Please follow these steps:
+
+**Quick Fix:**
+1. Download the installer: `install_poppler.py` (in project root)
+2. Run: `python install_poppler.py`
+3. Restart this application
+
+**Manual Installation:**
+1. Visit: https://github.com/oschwartz10612/poppler-windows/releases
+2. Download the latest release ZIP
+3. Extract to a folder (e.g., `C:\\poppler`)
+4. Add `poppler/bin` to your system PATH
+5. Restart this application
+
+**Test Installation:**
+Open command prompt and run: `pdftoppm -h`
+
+**Alternative (if using conda):**
+```bash
+conda install -c conda-forge poppler
+```
+                """
+                st.error(error_msg)
+                return None
         
         if image_files:
             img_path = save_uploaded_files(image_files, "image")
-            print(f"Images saved to: {img_path}")
+            print(f"🖼️ Images saved to: {img_path}")
         
-        # 그래프 빌드 (백그라운드에서 처리)
+        # 🔥 단일 LangGraph 실행으로 통합
+        return await execute_langgraph_once_with_streaming(
+            query, pdf_path, img_path
+        )
+                
+    except Exception as e:
+        # PDF 관련 에러는 더 자세한 정보 제공
+        if "poppler" in str(e).lower() or "pdftoppm" in str(e).lower():
+            st.error("❌ **PDF Processing Error**")
+            st.error("Poppler is required for PDF processing but not found.")
+            
+            with st.expander("🔧 **How to Fix This Error**", expanded=True):
+                st.markdown("""
+                **Method 1: Quick Install**
+                1. Download `install_poppler.py` from the project root
+                2. Run in terminal: `python install_poppler.py`
+                3. Restart this application
+                
+                **Method 2: Manual Install**
+                1. Go to: https://github.com/oschwartz10612/poppler-windows/releases
+                2. Download the latest ZIP file
+                3. Extract to `C:\\poppler`
+                4. Add `C:\\poppler\\bin` to system PATH
+                5. Restart this application
+                
+                **Method 3: Using Conda**
+                ```bash
+                conda install -c conda-forge poppler
+                ```
+                
+                **Test Installation:**
+                Open command prompt and run: `pdftoppm -h`
+                """)
+        else:
+            st.error(f"❌ Error processing query with files: {str(e)}")
+        
+        print(f"❌ Full error traceback:")
+        print(traceback.format_exc())
+        return None
+
+
+def debug_graph_execution(graph, init_state: GraphState):
+    """그래프 실행 디버깅을 위한 함수"""
+    print("🔍 Debug: Testing graph structure...")
+    
+    try:
+        # 그래프 구조 확인
+        graph_dict = graph.get_graph()
+        print(f"   Graph nodes: {list(graph_dict.nodes.keys())}")
+        print(f"   Graph edges: {[(e.source, e.target) for e in graph_dict.edges]}")
+        
+        # 단순 invoke 테스트
+        print("🔍 Debug: Testing simple invoke...")
+        test_result = graph.invoke(init_state)
+        print(f"   Invoke result keys: {list(test_result.keys()) if isinstance(test_result, dict) else 'non-dict'}")
+        print(f"   Invoke answer: {test_result.get('answer', 'NO ANSWER')[:100]}...")
+        
+        return test_result
+        
+    except Exception as e:
+        print(f"❌ Debug error: {e}")
+        return None
+
+
+async def execute_langgraph_once_with_streaming(
+    query: str, 
+    pdf_path=None, 
+    img_path=None
+) -> Dict[str, Any]:
+    """
+    🔥 핵심 수정: LangGraph를 한 번만 실행하여 중간 결과와 최종 결과를 모두 수집
+    """
+    print("🚀 Starting unified LangGraph execution...")
+    
+    try:
+        # 그래프 빌드
         graph = build_graph(
             pdf_path=pdf_path,
             img_path=img_path,
@@ -259,306 +375,110 @@ async def process_query_with_files(query: str, pdf_file=None, image_files=None):
         # 초기 상태 설정
         init_state: GraphState = {"question": [query], "messages": [("user", query)]}
         
-        # LangGraph 실행 - 일반적인 스트리밍 방식과 동일하게 처리
+        # 🔥 디버깅용 그래프 테스트 (개발 중에만 사용)
+        if st.session_state.get("debug_mode", False):
+            debug_result = debug_graph_execution(graph, init_state)
+        
+        # 🔥 중간 결과 수집을 위한 변수들
+        intermediate_results = []
+        final_state = None
+        accumulated_state = {}  # 🔥 상태 누적용
+        
+        # 🔥 스트리밍 실행하면서 중간 결과 수집
+        print("📡 Starting streaming execution...")
+        node_count = 0
+        
         async for event in graph.astream(init_state):
+            print(f"🔍 Event {node_count + 1}: {list(event.keys())}")
+            
             for node_name, node_output in event.items():
                 if node_name == "__end__":
+                    # 최종 상태는 누적된 상태를 사용
+                    final_state = accumulated_state.copy()
+                    print(f"✅ Final state captured with keys: {list(final_state.keys())}")
                     continue
-                    
-                # 각 노드의 실행 결과를 실시간으로 표시 (파일 처리 여부와 관계없이 동일)
-                await display_node_execution(node_name, node_output, query)
-                    
-                # 잠시 대기 (사용자가 읽을 수 있도록)
+                
+                # 🔥 상태 누적 (각 노드의 출력을 누적)
+                if isinstance(node_output, dict):
+                    accumulated_state.update(node_output)
+                    print(f"   Node '{node_name}' added keys: {list(node_output.keys())}")
+                    print(f"   Accumulated keys: {list(accumulated_state.keys())}")
+                
+                # 중간 결과 저장
+                intermediate_results.append({
+                    "node_name": node_name,
+                    "node_output": node_output,
+                    "timestamp": asyncio.get_event_loop().time()
+                })
+                
+                # 실시간 UI 업데이트
+                await display_node_execution_unified(node_name, node_output, query)
+                
+                # 사용자가 읽을 수 있도록 잠시 대기
                 await asyncio.sleep(1)
+                node_count += 1
         
-        # 최종 상태 가져오기
-        final_state = graph.invoke(init_state)
+        # 🔥 최종 상태 확인 및 처리
+        if final_state is None or not final_state:
+            print("⚠️ No proper final state, using accumulated state...")
+            final_state = accumulated_state
         
-        # 최종 결과 표시 (일반적인 방식과 동일)
-        display_final_results(final_state, query)
-            
-        return final_state
-                
+        # 🔥 필수 키가 없으면 기본값 설정
+        essential_keys = ["answer", "context", "executed_steps", "plan", "combined_context", "explanation"]
+        for key in essential_keys:
+            if key not in final_state:
+                if key == "answer":
+                    final_state[key] = "Processing completed but no final answer generated"
+                elif key in ["context", "executed_steps", "plan"]:
+                    final_state[key] = []
+                else:
+                    final_state[key] = ""
+        
+        print(f"🔍 Final state summary:")
+        print(f"   Answer: {final_state.get('answer', 'None')[:100]}...")
+        print(f"   Context docs: {len(final_state.get('context', []))}")
+        print(f"   Executed steps: {len(final_state.get('executed_steps', []))}")
+        print(f"   Plan: {len(final_state.get('plan', []))}")
+        
+        # 🔥 수집된 결과를 정리하여 반환
+        processed_result = {
+            "answer": final_state.get("answer", "No answer generated"),
+            "context": final_state.get("context", []),
+            "executed_steps": final_state.get("executed_steps", []),
+            "plan": final_state.get("plan", []),
+            "combined_context": final_state.get("combined_context", ""),
+            "explanation": final_state.get("explanation", ""),
+            "intermediate_results": intermediate_results,
+            "node_count": len(intermediate_results),
+            "complexity": "Complex" if final_state.get("executed_steps") else "Simple"
+        }
+        
+        print(f"✅ Unified execution completed: {len(intermediate_results)} intermediate steps")
+        return processed_result
+        
     except Exception as e:
-        st.error(f"❌ Error processing query with files: {str(e)}")
-        print(f"❌ Full error traceback:")
+        print(f"❌ Error in unified LangGraph execution: {e}")
         print(traceback.format_exc())
-        return None
-
-
-def display_complexity_result(complexity: str):
-    """복잡도 판정 결과 표시"""
-    if complexity == "simple":
-        st.markdown(
-            f'<div class="complexity-simple">📝 Question Complexity: SIMPLE</div>',
-            unsafe_allow_html=True
-        )
-        st.info("This question will be processed using direct retrieval.")
-    else:
-        st.markdown(
-            f'<div class="complexity-complex">🧠 Question Complexity: COMPLEX</div>',
-            unsafe_allow_html=True
-        )
-        st.info("This question requires multi-step reasoning and will be processed using Plan-and-Execute.")
-
-
-def display_simple_processing(query: str):
-    """Simple 질문 처리 과정 표시"""
-    st.markdown("### 🔍 Processing Simple Query")
-    
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    try:
-        # 그래프 구성
-        status_text.text("Building retrieval pipeline...")
-        progress_bar.progress(20)
-        
-        graph = build_graph(
-            pdf_path=None,
-            img_path=None,
-            retrieval_type=config.RETRIEVAL_TYPE,
-            hybrid_weights=[config.HYBRID_WEIGHT, 1 - config.HYBRID_WEIGHT]
-        )
-        
-        # 질문 처리
-        status_text.text("Processing query...")
-        progress_bar.progress(50)
-        
-        init_state: GraphState = {"question": [query], "messages": [("user", query)]}
-        final_state = graph.invoke(init_state)
-        
-        progress_bar.progress(80)
-        status_text.text("Generating final answer...")
-        
-        # 결과 표시
-        progress_bar.progress(100)
-        status_text.text("Complete!")
-        time.sleep(0.5)
-        
-        # 프로그레스 바 정리
-        progress_bar.empty()
-        status_text.empty()
-        
-        # 컨텍스트 표시
-        if "context" in final_state and final_state["context"]:
-            with st.expander("📚 Retrieved Context", expanded=False):
-                contexts = final_state["context"]
-                for i, doc in enumerate(contexts[:3], 1):  # 처음 3개만 표시
-                    content = doc.page_content if hasattr(doc, 'page_content') else str(doc)
-                    st.markdown(f"**Context {i}:**")
-                    st.markdown(f'<div class="context-box">{content[:500]}...</div>', 
-                              unsafe_allow_html=True)
-        
-        # 최종 답변 표시
-        st.markdown("### 💡 Final Answer")
-        answer = final_state.get("answer", "No answer generated")
-        st.markdown(f'<div class="result-box">{answer}</div>', unsafe_allow_html=True)
-        
-        return final_state
-        
-    except Exception as e:
-        st.error(f"Error processing simple query: {str(e)}")
-        st.error(traceback.format_exc())
-        return None
-
-
-async def process_complex_query_step_by_step(query: str):
-    """Complex 질문을 단계별로 처리하고 실시간 업데이트"""
-    
-    # Plan-and-Execute 에이전트 생성
-    agent = PlanExecuteLangGraph()
-    
-    # 초기 상태 설정
-    initial_state = {
-        "input": query,
-        "plan": [],
-        "past_steps": [],
-        "response": "",
-        "current_step_index": 0,
-        "retrieval_type": config.RETRIEVAL_TYPE,
-        "hybrid_weights": [config.HYBRID_WEIGHT, 1 - config.HYBRID_WEIGHT],
-        "all_context_docs": [],
-        "combined_context": ""
-    }
-    
-    # 프로그레스 추적을 위한 컨테이너들
-    step_container = st.empty()
-    
-    try:
-        # Step 1: Planning
-        with step_container.container():
-            st.markdown("### 📋 Step 1: Creating Execution Plan")
-            with st.spinner("Planning execution steps..."):
-                plan_result = await agent.plan_step(initial_state)
-                initial_state.update(plan_result)
-            
-            # 계획 표시
-            if initial_state["plan"]:
-                st.markdown("**Generated Plan:**")
-                for i, step in enumerate(initial_state["plan"], 1):
-                    st.markdown(f'<div class="plan-step">{i}. {step}</div>', 
-                              unsafe_allow_html=True)
-            
-            time.sleep(2)  # 사용자가 계획을 읽을 시간
-        
-        # Step 2+: Execution Loop
-        step_num = 2
-        max_iterations = config.MAX_PLAN_STEPS + 2  # 안전 장치
-        
-        while step_num <= max_iterations:
-            current_step_index = initial_state.get("current_step_index", 0)
-            plan = initial_state.get("plan", [])
-            
-            # 실행할 단계가 있는지 확인
-            if current_step_index >= len(plan):
-                break
-                
-            # 현재 단계 표시
-            with step_container.container():
-                current_step = plan[current_step_index]
-                st.markdown(f"### 🔄 Step {step_num}: Executing Plan")
-                st.markdown(f"**Current Step:** {current_step}")
-                
-                with st.spinner(f"Executing: {current_step[:50]}..."):
-                    # 단계 실행
-                    execute_result = await agent.execute_step(initial_state)
-                    initial_state.update(execute_result)
-                
-                # 실행 결과 표시
-                past_steps = initial_state.get("past_steps", [])
-                if past_steps:
-                    latest_step, latest_result = past_steps[-1]
-                    
-                    col1, col2 = st.columns([1, 1])
-                    
-                    with col1:
-                        st.markdown("**Retrieved Context:**")
-                        combined_context = initial_state.get("combined_context", "")
-                        if combined_context:
-                            # 가장 최근 단계의 컨텍스트만 표시
-                            recent_context = combined_context.split("=== Step")[-1]
-                            st.markdown(f'<div class="context-box">{recent_context[:400]}...</div>', 
-                                      unsafe_allow_html=True)
-                    
-                    with col2:
-                        st.markdown("**Step Result:**")
-                        st.markdown(f'<div class="result-box">{latest_result[:300]}...</div>', 
-                                  unsafe_allow_html=True)
-                
-                time.sleep(1.5)  # 결과를 읽을 시간
-            
-            # Replan 단계
-            step_num += 1
-            with step_container.container():
-                st.markdown(f"### 🤔 Step {step_num}: Evaluating Progress")
-                
-                with st.spinner("Evaluating progress and replanning..."):
-                    replan_result = await agent.replan_step(initial_state)
-                    initial_state.update(replan_result)
-                
-                # 종료 조건 확인
-                if "response" in replan_result and replan_result["response"]:
-                    # 최종 답변 생성됨
-                    break
-                elif "plan" in replan_result:
-                    # 새로운 계획 생성됨
-                    st.markdown("**Updated Plan:**")
-                    new_plan = replan_result["plan"]
-                    for i, step in enumerate(new_plan, 1):
-                        st.markdown(f'<div class="plan-step">{i}. {step}</div>', 
-                                  unsafe_allow_html=True)
-                
-                time.sleep(1)
-            
-            step_num += 1
-            
-            # 무한 루프 방지
-            if step_num > max_iterations:
-                st.warning("Maximum iteration limit reached.")
-                break
-        
-        # 최종 답변 표시
-        step_container.empty()  # 이전 단계들 정리
-        
-        # 과정 요약을 expander로 표시
-        with st.expander("📊 Process Summary", expanded=False):
-            st.markdown("**Original Plan:**")
-            for i, step in enumerate(initial_state.get("plan", []), 1):
-                st.markdown(f"{i}. {step}")
-            
-            st.markdown("**Executed Steps:**")
-            for i, (step, result) in enumerate(initial_state.get("past_steps", []), 1):
-                st.markdown(f"**Step {i}:** {step}")
-                st.markdown(f"*Result:* {result[:200]}...")
-        
-        # 최종 답변
-        st.markdown("### 💡 Final Answer")
-        final_response = initial_state.get("response", "")
-        if not final_response:
-            # response가 없으면 수동으로 생성
-            final_response = await agent._generate_final_response(initial_state)
-        
-        st.markdown(f'<div class="result-box">{final_response}</div>', 
-                  unsafe_allow_html=True)
-        
-        return initial_state
-        
-    except Exception as e:
-        st.error(f"Error in complex query processing: {str(e)}")
-        st.error(traceback.format_exc())
-        return None
+        return {
+            "answer": f"Error in processing: {str(e)}",
+            "context": [],
+            "executed_steps": [],
+            "plan": [],
+            "combined_context": "",
+            "explanation": f"Error: {str(e)}",
+            "intermediate_results": [],
+            "node_count": 0,
+            "complexity": "Error"
+        }
 
 
 async def process_query_with_langgraph_streaming(query: str):
-    """LangGraph의 실행 흐름을 실시간으로 추적하여 표시"""
-    
-    # LangGraph 빌드
-    graph = build_graph(
-        pdf_path=None,
-        img_path=None,
-        retrieval_type=config.RETRIEVAL_TYPE,
-        hybrid_weights=[config.HYBRID_WEIGHT, 1 - config.HYBRID_WEIGHT]
-    )
-    
-    # 초기 상태
-    init_state: GraphState = {"question": [query], "messages": [("user", query)]}
-    
-    # 실시간 업데이트를 위한 컨테이너들
-    main_container = st.empty()
-    progress_container = st.empty()
-    
-    try:
-        # LangGraph 스트리밍 실행
-        async for event in graph.astream(init_state):
-            for node_name, node_output in event.items():
-                if node_name == "__end__":
-                    continue
-                    
-                # 각 노드의 실행 결과를 실시간으로 표시
-                with main_container.container():
-                    await display_node_execution(node_name, node_output, query)
-                    
-                # 잠시 대기 (사용자가 읽을 수 있도록)
-                await asyncio.sleep(1)
-        
-        # 최종 상태 가져오기
-        final_state = graph.invoke(init_state)
-        
-        # 최종 결과 표시
-        with main_container.container():
-            display_final_results(final_state, query)
-            
-        return final_state
-        
-    except Exception as e:
-        st.error(f"Error in LangGraph execution: {str(e)}")
-        st.error(traceback.format_exc())
-        return None
+    """🔥 통합된 LangGraph 실행 - 파일 없는 경우"""
+    return await execute_langgraph_once_with_streaming(query, None, None)
 
 
-async def display_node_execution(node_name: str, node_output: Dict[str, Any], query: str):
-    """각 노드의 실행 결과를 표시"""
+async def display_node_execution_unified(node_name: str, node_output: Dict[str, Any], query: str):
+    """🔥 수정된 노드 실행 표시 - 최종 결과 표시 없이 중간 단계만"""
     
     if node_name == "complexity_check":
         # 복잡도 체크 결과 표시
@@ -571,7 +491,7 @@ async def display_node_execution(node_name: str, node_output: Dict[str, Any], qu
         else:
             st.info("🧠 Proceeding with complex Plan-and-Execute pipeline...")
             
-    elif node_name in ["retrieve_simple"]:
+    elif node_name in ["retrieve_simple", "extract_file_content"]:
         # Simple 검색 단계
         st.markdown("### 📚 Step 2: Information Retrieval")
         with st.spinner("Searching relevant documents..."):
@@ -610,9 +530,7 @@ async def display_node_execution(node_name: str, node_output: Dict[str, Any], qu
         with st.spinner("Generating final answer..."):
             await asyncio.sleep(1)
         
-        answer = node_output.get("answer", "")
-        if answer:
-            st.success("✅ Answer generated successfully")
+        st.success("✅ Answer generated successfully")
         
     elif node_name == "plan_and_execute":
         # Complex 처리 결과
@@ -635,12 +553,88 @@ async def display_node_execution(node_name: str, node_output: Dict[str, Any], qu
                     st.markdown(f"*Result:* {result[:200]}...")
                     st.markdown("---")
         
-        # 컨텍스트 표시
-        combined_context = node_output.get("combined_context", "")
-        if combined_context:
-            with st.expander("📚 Retrieved Context", expanded=False):
-                st.markdown(f'<div class="context-box">{combined_context[:800]}...</div>', 
-                          unsafe_allow_html=True)
+        # 컨텍스트는 최종 결과에서만 표시하도록 생략
+        st.success("✅ Complex processing completed")
+
+
+def display_final_results_unified(processed_result: Dict[str, Any], query: str):
+    """🔥 통합된 최종 결과 표시 - 이미 수집된 결과 사용"""
+    st.markdown("---")
+    st.markdown("### 🎉 Final Results")
+    
+    # 최종 답변
+    answer = processed_result.get("answer", "No answer generated")
+    st.markdown("#### 💡 Answer:")
+    st.markdown(f'<div class="result-box">{answer}</div>', unsafe_allow_html=True)
+    
+    # 처리 경로 요약
+    explanation = processed_result.get("explanation", "")
+    if explanation:
+        st.markdown("#### 📝 Processing Summary:")
+        st.info(explanation)
+    
+    # 통계 정보
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        context_count = len(processed_result.get("context", []))
+        st.metric("📚 Documents Retrieved", context_count)
+    
+    with col2:
+        # Plan-Execute 정보
+        complexity = processed_result.get("complexity", "Unknown")
+        if complexity == "Complex":
+            executed_steps = processed_result.get("executed_steps", [])
+            st.metric("🔄 Steps Executed", len(executed_steps))
+        else:
+            st.metric("🔍 Processing Type", "Simple Retrieval")
+    
+    with col3:
+        node_count = processed_result.get("node_count", 0)
+        st.metric("⚙️ Graph Nodes", node_count)
+    
+    # 🔥 백그라운드 자동 저장 (기존 함수 재사용)
+    try:
+        # processed_result를 final_state 형식으로 변환
+        final_state_for_save = {
+            "answer": processed_result.get("answer", ""),
+            "context": processed_result.get("context", []),
+            "executed_steps": processed_result.get("executed_steps", []),
+            "plan": processed_result.get("plan", []),
+            "combined_context": processed_result.get("combined_context", ""),
+            "explanation": processed_result.get("explanation", ""),
+        }
+        
+        # Graph State 저장
+        saved_state_file = save_graph_state_to_output(final_state_for_save, query)
+        if saved_state_file:
+            print(f"✅ Graph state auto-saved to: {saved_state_file}")
+        
+        # Graph 시각화 저장
+        saved_graph_files = save_graph_visualizations(final_state_for_save, query)
+        if saved_graph_files:
+            print(f"✅ Graph visualizations auto-saved:")
+            for graph_file in saved_graph_files:
+                print(f"   📈 {Path(graph_file).name}")
+        
+    except Exception as e:
+        print(f"❌ Error in background auto-save: {e}")
+
+
+def display_complexity_result(complexity: str):
+    """복잡도 판정 결과 표시"""
+    if complexity == "simple":
+        st.markdown(
+            f'<div class="complexity-simple">📝 Question Complexity: SIMPLE</div>',
+            unsafe_allow_html=True
+        )
+        st.info("This question will be processed using direct retrieval.")
+    else:
+        st.markdown(
+            f'<div class="complexity-complex">🧠 Question Complexity: COMPLEX</div>',
+            unsafe_allow_html=True
+        )
+        st.info("This question requires multi-step reasoning and will be processed using Plan-and-Execute.")
 
 
 def save_graph_state_to_output(final_state: Dict[str, Any], query: str) -> str:
@@ -777,7 +771,7 @@ def save_graph_visualizations(final_state: Dict[str, Any], query: str) -> List[s
 
 
 def display_final_results(final_state: Dict[str, Any], query: str):
-    """최종 결과 표시 - 저장 기능을 백그라운드로 이동"""
+    """기존의 최종 결과 표시 함수 - 백업용"""
     st.markdown("---")
     st.markdown("### 🎉 Final Results")
     
@@ -812,25 +806,9 @@ def display_final_results(final_state: Dict[str, Any], query: str):
         if scores and len(scores) > 0:
             avg_score = sum(scores) / len(scores)
             st.metric("🎯 Avg Similarity", f"{avg_score:.3f}")
-    
-    # 🔥 백그라운드 자동 저장 (UI 없이)
-    try:
-        # Graph State 저장
-        saved_state_file = save_graph_state_to_output(final_state, query)
-        if saved_state_file:
-            print(f"✅ Graph state auto-saved to: {saved_state_file}")
-        
-        # Graph 시각화 저장
-        saved_graph_files = save_graph_visualizations(final_state, query)
-        if saved_graph_files:
-            print(f"✅ Graph visualizations auto-saved:")
-            for graph_file in saved_graph_files:
-                print(f"   📈 {Path(graph_file).name}")
-        
-    except Exception as e:
-        print(f"❌ Error in background auto-save: {e}")
 
 
+# 🔥 main 함수에서 response_content 정의 문제 수정
 def main():
     """메인 Streamlit 앱"""
     initialize_session_state()
@@ -846,6 +824,10 @@ def main():
         st.markdown(f"**Retrieval Type:** {config.RETRIEVAL_TYPE}")
         st.markdown(f"**TOP_K:** {config.TOP_K}")
         st.markdown(f"**Max Plan Steps:** {config.MAX_PLAN_STEPS}")
+        
+        # 🔥 디버그 모드 토글 추가
+        debug_mode = st.checkbox("🐛 Debug Mode", value=False, help="Enable detailed debugging logs")
+        st.session_state["debug_mode"] = debug_mode
         
         st.markdown("### 📊 Graph Flow")
         st.markdown("""
@@ -910,7 +892,10 @@ def main():
             pdf_file = st.session_state.uploaded_files.get("pdf")
             image_files = st.session_state.uploaded_files.get("images", [])
             
-            # 처리 실행
+            # 🔥 response_content 초기화
+            response_content = "**Error:** Initialization failed"
+            
+            # 🔥 통합된 처리 실행
             try:
                 # 비동기 처리를 위한 래퍼
                 try:
@@ -952,10 +937,10 @@ def main():
                         print(traceback.format_exc())
                         raise direct_error
                 
-                # 결과 처리 및 표시
+                # 🔥 결과 처리 및 표시 - 통합된 방식 사용
                 if result:
                     answer = result.get("answer", "No answer generated")
-                    complexity = "Complex" if result.get("executed_steps") else "Simple"
+                    complexity = result.get("complexity", "Unknown")
                     
                     # 파일 처리 정보는 간단하게만 표시 (선택적)
                     file_info = ""
@@ -965,20 +950,8 @@ def main():
                     
                     response_content = f"**Question Complexity:** {complexity}{file_info}\n\n**Answer:** {answer}"
                     
-                    # 🔥 백그라운드 자동 저장 (사용자에게 보이지 않음)
-                    try:
-                        # Graph State 저장
-                        saved_state_file = save_graph_state_to_output(result, prompt)
-                        if saved_state_file:
-                            print(f"🔄 Background: Graph state saved to {Path(saved_state_file).name}")
-                        
-                        # Graph 시각화 저장
-                        saved_graph_files = save_graph_visualizations(result, prompt)
-                        if saved_graph_files:
-                            print(f"🔄 Background: {len(saved_graph_files)} graph visualization(s) saved")
-                            
-                    except Exception as save_error:
-                        print(f"❌ Background save error: {save_error}")
+                    # 🔥 통합된 최종 결과 표시
+                    display_final_results_unified(result, prompt)
                     
                     # 파일 업로드 상태 자동 정리
                     if pdf_file or image_files:
