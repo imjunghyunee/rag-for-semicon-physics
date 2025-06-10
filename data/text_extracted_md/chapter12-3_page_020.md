@@ -1,0 +1,11 @@
+# CHAPTER 12 The Bipolar Transistor
+
+!Circuit Diagrams
+
+**Figure 12.43** (a) Circuit used for transistor switching. (b) Input base drive for transistor switching. (c) Collector current versus time during transistor switching.
+
+Injected into the base during this time. The collector current increases from zero to 10 percent of its final value during this time period, referred to as the delay time.
+
+During the next time period, \( t_1 \leq t \leq t_2 \), the base current is supplying charge, which increases the B–E junction voltage from near cutoff to near saturation. During this time, additional carriers are being injected into the base so that the gradient of the minority carrier electron concentration in the base increases, causing the collector current to increase. We refer to this time period as the rise time, during which the collector current increases from 10 to 90 percent of the final value. For \( t > t_2 \), the base drive continues to supply base current, driving the transistor into saturation and establishing the final minority carrier distribution in the device.
+
+The switching of the transistor from saturation to cutoff involves removing all of the excess minority carriers stored in the emitter, base, and collector regions. Figure 12.44 shows the charge storage in the base and collector when the transistor is in saturation. The charge \( Q_B \) is the excess charge stored in a forward-active transistor, and \( Q_{BX} \) and \( Q_C \) are the extra charges stored when the transistor is biased in saturation. At \( t = t_3 \), the base voltage \( V_{BB} \) switches to a negative value of \( -V_{RX} \). The base current in the transistor reverses direction as was the case in switching a pn junction diode from forward to reverse bias. The reverse base current pulls the excess stored carriers from the emitter and base regions. Initially, the collector current does not change significantly, since the gradient of the minority carrier concentration in the base does not.

@@ -1,0 +1,12 @@
+# 12.4 Nonideal Effects
+
+!Figure 12.31  
+**Figure 12.31** | Impurity concentration profiles of a double-diffused npn bipolar transistor.
+
+Electrons are injected from the n-type emitter into the base, and the minority carrier base electrons begin diffusing toward the collector region. The induced electric field in the base, because of the nonuniform doping, produces a force on the electrons in the direction toward the collector. The induced electric field, then, aids the flow of minority carriers across the base region. This electric field is called an **accelerating field**.
+
+The accelerating field will produce a drift component of current that is in addition to the existing diffusion current. Since the minority carrier electron concentration varies across the base, the drift current density will not be constant. The total current across the base, however, is nearly constant. The induced electric field in the base due to nonuniform base doping will alter the minority carrier distribution through the base so that the sum of drift current and diffusion current will be constant. Calculations have shown that the uniformly doped base theory is very useful for estimating the base characteristics.
+
+## 12.4.6 Breakdown Voltage
+
+There are two breakdown mechanisms to consider in a bipolar transistor. The first is called punch-through. As the reverse-biased B–C voltage increases, the B–C space charge region widens and extends farther into the neutral base. It is possible for the B–C depletion region to penetrate completely through the base and reach the B–E space charge region, the effect called **punch-through**. Figure 12.32a shows the energy-band diagram of an npn bipolar transistor in thermal equilibrium, and Figure 12.32b shows the energy-band diagram for two values of reverse-biased B–C junction voltage. When a small C–B voltage, \(V_{CB}\), is applied, the B–E potential barrier is not affected; thus, the transistor current is still essentially zero. When a large reverse-biased voltage, \(V_{CB}\), is applied, the depletion region extends through the base region and the B–E potential barrier is lowered because of the C–B voltage. The lowering of the potential barrier at the B–E junction produces a large increase in current with a very small increase in C–B voltage. This effect is the punch-through breakdown phenomenon.

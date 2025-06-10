@@ -1,0 +1,13 @@
+# 1.6.2 Impurities in Solids
+
+Foreign atoms, or impurity atoms, may be present in a crystal lattice. **Impurity atoms may be located at normal lattice sites, in which case they are called substitutional impurities. Impurity atoms may also be located between normal sites, in which case they are called interstitial impurities.** Both these impurities are lattice defects and are schematically shown in Figure 1.20. Some impurities, such as oxygen in silicon, tend to be essentially inert; however, other impurities, such as gold or phosphorus in silicon, can drastically alter the electrical properties of the material.
+
+In Chapter 4 we will see that, by adding controlled amounts of particular impurity atoms, the electrical characteristics of a semiconductor material can be favorably altered. **The technique of adding impurity atoms to a semiconductor material in order to change its conductivity is called doping. There are two general methods of doping: impurity diffusion and ion implantation.**
+
+The actual diffusion process depends to some extent on the material but, in general, impurity diffusion occurs when a semiconductor crystal is placed in a high-temperature (≈1000°C) gaseous atmosphere containing the desired impurity atom. At this high temperature, many of the crystal atoms can randomly move in and out of their single-crystal lattice sites. Vacancies may be created by this random motion so that impurity atoms can move through the lattice by hopping from one vacancy to another. Impurity diffusion is the process by which impurity particles move from a region of high concentration near the surface to a region of lower concentration within the crystal. When the temperature decreases, the impurity atoms become permanently frozen into the substitutional lattice sites. Diffusion of various impurities into selected regions of a semiconductor allows us to fabricate complex electronic circuits in a single semiconductor crystal.
+
+Ion implantation generally takes place at a lower temperature than diffusion. A beam of impurity ions is accelerated to kinetic energies in the range of 50 keV or greater and then directed to the surface of the semiconductor. The high-energy impurity ions enter the crystal and come to rest at some average depth from the surface. One advantage of ion implantation is that controlled numbers of impurity atoms can be introduced into specific regions of the crystal. A disadvantage of this technique is that the incident impurity atoms collide with the crystal atoms, causing damage.
+
+!Figure 1.20
+
+*Figure 1.20* Two-dimensional representation of a single-crystal lattice showing (a) a substitutional impurity and (b) an interstitial impurity.

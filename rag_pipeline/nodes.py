@@ -163,6 +163,9 @@ def node_llm_answer(state: GraphState) -> GraphState:
         }
 
 
+# def node_llm_answer_parent
+
+
 def node_simple_or_not(state: GraphState) -> dict:
     """Determine if the question is simple or requires complex multi-hop reasoning."""
     query: str = state["question"][-1]
@@ -245,4 +248,229 @@ def node_complex_llm_answer(state: GraphState) -> GraphState:
         return {
             "answer": f"Error generating complex answer: {str(e)}",
             "messages": [("assistant", f"Error: {str(e)}")],
+        }
+
+
+def node_relevance_check_parent(state: GraphState) -> GraphState:
+    """Parent retrieval relevance check with multiple similarity scores"""
+    print("🔍 Starting parent relevance check...")
+
+    try:
+        output_dir = Path(config.OUTPUT_DIR)
+
+        # Load similarity scores
+        content_query_score_path = output_dir / "content_query_similarity_score.json"
+        summary_query_score_path = output_dir / "summary_query_similarity_score.json"
+        content_expanded_query_score_path = (
+            output_dir / "content_expanded_query_similarity_score.json"
+        )
+
+        # Check if score files exist
+        if not all(
+            [
+                content_query_score_path.exists(),
+                summary_query_score_path.exists(),
+                content_expanded_query_score_path.exists(),
+            ]
+        ):
+            print(
+                "   ⚠️ Warning: Some score files not found, skipping parent relevance check"
+            )
+            return {
+                "context": state.get("context", []),
+                "examples": state.get("examples", []),
+                "scores": "Score files not found",
+                "filtered_context": state.get("context", []),
+                "filtered_examples": state.get("examples", []),
+            }
+
+        print("📂 Loading similarity scores...")
+        with open(content_query_score_path, "r", encoding="utf-8") as f:
+            content_query_scores = json.load(f)
+
+        with open(summary_query_score_path, "r", encoding="utf-8") as f:
+            summary_query_scores = json.load(f)
+
+        with open(content_expanded_query_score_path, "r", encoding="utf-8") as f:
+            summary_expanded_query_scores = json.load(f)
+
+        print(
+            f"   ✅ Loaded scores - Content: {len(content_query_scores)}, Summary: {len(summary_query_scores)}, Expanded: {len(summary_expanded_query_scores)}"
+        )
+
+        # Create score summary string
+        content_query_scores_str = " ".join(
+            [str(score) for score in content_query_scores]
+        )
+        summary_query_scores_str = " ".join(
+            [str(score) for score in summary_query_scores]
+        )
+        summary_expanded_query_scores_str = " ".join(
+            [str(score) for score in summary_expanded_query_scores]
+        )
+
+        score_list = (
+            f"Content-Query similarity scores: {content_query_scores_str}\n"
+            f"Summary-Query similarity scores: {summary_query_scores_str}\n"
+            f"Content-Expanded-Query similarity scores: {summary_expanded_query_scores_str}"
+        )
+
+        # Get content and examples from state
+        content = state.get("context", [])
+        examples = state.get("examples", [])
+
+        if not content and not examples:
+            print("   ⚠️ Warning: No content or examples found in state")
+            return {
+                "context": [],
+                "examples": [],
+                "scores": score_list,
+                "filtered_context": [],
+                "filtered_examples": [],
+            }
+
+        print(
+            f"📊 Filtering content and examples (threshold: {config.SIM_THRESHOLD})..."
+        )
+
+        # Filter content based on content-query similarity scores
+        content_texts = [
+            d.page_content if hasattr(d, "page_content") else str(d) for d in content
+        ]
+        content_query_filtered_scores = []
+        content_query_filtered_context = []
+
+        for i, score in enumerate(content_query_scores):
+            if i < len(content_texts) and float(score) >= config.SIM_THRESHOLD:
+                content_query_filtered_scores.append(str(score))
+                content_query_filtered_context.append(content_texts[i])
+
+        print(
+            f"   ✅ Filtered content: {len(content_query_filtered_context)}/{len(content_texts)} documents"
+        )
+
+        # Filter examples based on summary-expanded-query similarity scores
+        content_examples = []
+        if examples:
+            if isinstance(examples[0], dict):
+                content_examples = [d.get("page_content", str(d)) for d in examples]
+            else:
+                content_examples = [
+                    d.page_content if hasattr(d, "page_content") else str(d)
+                    for d in examples
+                ]
+
+        examples_expanded_query_filtered_scores = []
+        examples_expanded_query_filtered_context = []
+
+        for i, score in enumerate(summary_expanded_query_scores):
+            if i < len(content_examples) and float(score) >= config.SIM_THRESHOLD:
+                examples_expanded_query_filtered_scores.append(str(score))
+                examples_expanded_query_filtered_context.append(content_examples[i])
+
+        print(
+            f"   ✅ Filtered examples: {len(examples_expanded_query_filtered_context)}/{len(content_examples)} documents"
+        )
+
+        # Check if we have any filtered results
+        if not (
+            content_query_filtered_context or examples_expanded_query_filtered_context
+        ):
+            print("   ⚠️ Warning: No documents passed the similarity threshold")
+            return {
+                "context": [],
+                "examples": [],
+                "scores": score_list,
+                "filtered_context": [],
+                "filtered_examples": [],
+            }
+
+        # Combine filtered content
+        content_query_filtered_str = "\n".join(content_query_filtered_context)
+        examples_expanded_query_filtered_str = "\n".join(
+            examples_expanded_query_filtered_context
+        )
+
+        if content_query_filtered_str and examples_expanded_query_filtered_str:
+            filtered_context = (
+                content_query_filtered_str + "\n" + examples_expanded_query_filtered_str
+            )
+        elif content_query_filtered_str:
+            filtered_context = content_query_filtered_str
+        else:
+            filtered_context = examples_expanded_query_filtered_str
+
+        print("✅ Parent relevance check completed successfully")
+
+        return {
+            "context": filtered_context,
+            "scores": score_list,
+            "examples": examples_expanded_query_filtered_context,
+            "filtered_context": content_query_filtered_context,
+            "filtered_examples": examples_expanded_query_filtered_context,
+            "filtered_scores": content_query_filtered_scores
+            + examples_expanded_query_filtered_scores,
+        }
+
+    except Exception as e:
+        print(f"❌ Error in parent relevance check: {e}")
+        import traceback
+
+        traceback.print_exc()
+
+        # Return original state on error
+        return {
+            "context": state.get("context", []),
+            "examples": state.get("examples", []),
+            "scores": f"Error in relevance check: {str(e)}",
+            "filtered_context": state.get("context", []),
+            "filtered_examples": state.get("examples", []),
+        }
+
+
+def node_parent_retrieve(state: GraphState) -> GraphState:
+    """Parent retrieval node for content and examples databases"""
+    query: str = state["question"][-1]
+
+    try:
+        content_docs, examples_docs = retrievers.parent_retrieve(query)
+
+        return {
+            "context": content_docs,
+            "examples": examples_docs,
+        }
+
+    except Exception as e:
+        print(f"Error in parent retrieve: {e}")
+        return {
+            "context": [],
+            "examples": [],
+        }
+
+
+def node_parent_retrieve_hybrid(state: GraphState) -> GraphState:
+    """Parent hybrid retrieval node for content and examples databases"""
+    query: str = state["question"][-1]
+
+    # 하이브리드 가중치 확인
+    hybrid_weights = state.get("hybrid_weights", [0.5, 0.5])
+
+    # 예시 데이터베이스용 하이브리드 가중치 (별도 설정 가능)
+    hybrid_weights_examples = state.get("hybrid_weights_examples", [0.5, 0.5])
+
+    try:
+        content_docs, examples_docs = retrievers.parent_retrieve_hybrid(
+            query, weights=hybrid_weights, weights_examples=hybrid_weights_examples
+        )
+
+        return {
+            "context": content_docs,
+            "examples": examples_docs,
+        }
+
+    except Exception as e:
+        print(f"Error in parent hybrid retrieve: {e}")
+        return {
+            "context": [],
+            "examples": [],
         }

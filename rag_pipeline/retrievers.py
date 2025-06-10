@@ -672,3 +672,415 @@ def hyde_hybrid_retrieve(
         json.dump([float(s) for s in scores], f, ensure_ascii=False)
 
     return reranked_docs, hypo_docs
+
+
+def parent_retrieve(query: HumanMessage | str) -> Tuple[List[Document], List[dict]]:
+    """Parent-child retrieval with content and examples databases"""
+    print(f"🔍 Starting parent_retrieve with query: {query}")
+
+    try:
+        # Step 1: Query text extraction
+        query_text = query.content if hasattr(query, "content") else query
+        print(f"   Query text: '{query_text}'")
+
+        # Step 2: Load vector databases
+        print("📂 Loading vector databases...")
+        content_vectordb = FAISS.load_local(
+            config.CONTENT_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+
+        summary_vectordb = FAISS.load_local(
+            config.SUMMARY_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+        print("   ✅ Vector databases loaded successfully")
+
+        # Step 3: Generate query embedding based on retrieval type
+        print(f"🔢 Generating query embedding (type: {config.RETRIEVAL_TYPE})...")
+
+        if config.RETRIEVAL_TYPE == "summary":
+            query_explanation = utils.generate_summary(query_text)
+            query_emb = model.encode(
+                query_explanation,
+                convert_to_tensor=False,
+                normalize_embeddings=True,
+            )
+        elif config.RETRIEVAL_TYPE == "hyde":
+            # Generate 5 HyDE documents and use their average embedding
+            hydes = []
+            for _ in range(5):
+                try:
+                    hypo_doc = utils.generate_hyde_document(query_text)
+                    embedding = model.encode(hypo_doc, normalize_embeddings=True)
+                    hydes.append(embedding)
+                except Exception as e:
+                    print(f"   Warning: Error generating HyDE document: {e}")
+                    continue
+
+            if hydes:
+                query_emb = np.mean(np.stack(hydes, axis=0), axis=0)
+                norm = np.linalg.norm(query_emb)
+                if norm > 0:
+                    query_emb /= norm
+            else:
+                print("   Warning: No HyDE documents generated, using original query")
+                query_emb = model.encode(query_text, normalize_embeddings=True)
+        else:
+            query_emb = model.encode(query_text, normalize_embeddings=True)
+
+        print(f"   ✅ Query embedding generated, shape: {query_emb.shape}")
+
+        # Step 4: Retrieve from content database
+        print("🔍 Retrieving from content database...")
+        sem = content_vectordb.similarity_search_by_vector(query_emb, k=config.TOP_K)
+        print(f"   ✅ Retrieved {len(sem)} content documents")
+
+        # Step 5: Create expanded query with content
+        print("📝 Creating expanded query with content...")
+        content_texts = [doc.page_content for doc in sem]
+        query_with_content = query_text + "\n" + "\n".join(content_texts)
+
+        query_with_content_embed = model.encode(
+            query_with_content,
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
+        print(f"   ✅ Expanded query embedding generated")
+
+        # Step 6: Retrieve from summary/examples database
+        print("🔍 Retrieving from summary/examples database...")
+        summary_sem = summary_vectordb.similarity_search_by_vector(
+            query_with_content_embed, k=config.TOP_K
+        )
+        print(f"   ✅ Retrieved {len(summary_sem)} summary documents")
+
+        # Step 7: Load parent documents
+        print("📂 Loading parent documents...")
+        parent_child_matching_dir = Path(
+            "./vectordb/jina_processed/examples_original.jsonl"
+        )
+
+        if not parent_child_matching_dir.exists():
+            print(
+                f"   ⚠️ Warning: Parent-child mapping file not found at {parent_child_matching_dir}"
+            )
+            parent_docs = []
+        else:
+            parent_ids = [
+                d.metadata.get("parent_id")
+                for d in summary_sem
+                if d.metadata.get("parent_id")
+            ]
+            parent_doc_map = {}
+
+            with open(parent_child_matching_dir, "r", encoding="utf-8") as f:
+                for line in f:
+                    parent_doc = json.loads(line)
+                    parent_doc_map[parent_doc["id"].replace("parent-", "")] = parent_doc
+
+            parent_docs = []
+            for parent_id in parent_ids:
+                if parent_id in parent_doc_map:
+                    parent_docs.append(parent_doc_map[parent_id])
+
+            print(f"   ✅ Loaded {len(parent_docs)} parent documents")
+
+        # Step 8: Calculate similarity scores
+        print("📊 Calculating similarity scores...")
+
+        # Content document embeddings
+        content_doc_vecs = model.encode(
+            [d.page_content for d in sem],
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
+
+        # Summary document embeddings
+        summary_doc_vecs = model.encode(
+            [d.page_content for d in summary_sem],
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
+
+        # Calculate cosine similarities
+        content_query_cos_sim = (
+            util.cos_sim(query_emb, content_doc_vecs)[0].float().cpu().numpy()
+        )
+        summary_query_cos_sim = (
+            util.cos_sim(query_emb, summary_doc_vecs)[0].float().cpu().numpy()
+        )
+        summary_expanded_query_cos_sim = (
+            util.cos_sim(query_with_content_embed, summary_doc_vecs)[0]
+            .float()
+            .cpu()
+            .numpy()
+        )
+
+        print(f"   ✅ Similarity scores calculated")
+
+        # Step 9: Save similarity scores
+        print("💾 Saving similarity scores...")
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(
+            output_dir / "content_query_similarity_score.json", "w", encoding="utf-8"
+        ) as f:
+            json.dump(content_query_cos_sim.tolist(), f, ensure_ascii=False)
+
+        with open(
+            output_dir / "summary_query_similarity_score.json", "w", encoding="utf-8"
+        ) as f:
+            json.dump(summary_query_cos_sim.tolist(), f, ensure_ascii=False)
+
+        with open(
+            output_dir / "content_expanded_query_similarity_score.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(summary_expanded_query_cos_sim.tolist(), f, ensure_ascii=False)
+
+        print("   ✅ All similarity scores saved")
+        print("✅ parent_retrieve completed successfully")
+
+        return sem, parent_docs
+
+    except Exception as e:
+        print(f"❌ Error in parent_retrieve: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return [], []
+
+
+def parent_retrieve_hybrid(
+    query: HumanMessage | str,
+    weights: List[float] = [0.5, 0.5],
+    weights_examples: List[float] = [0.5, 0.5],
+) -> Tuple[List[Document], List[dict]]:
+    """Parent-child hybrid retrieval with BM25 + vector similarity"""
+    print(f"🔍 Starting parent_retrieve_hybrid with query: {query}")
+
+    try:
+        # Step 1: Query text extraction
+        query_text = query.content if hasattr(query, "content") else query
+        print(f"   Query text: '{query_text}'")
+
+        # Step 2: Load vector databases
+        print("📂 Loading vector databases...")
+        content_vectordb = FAISS.load_local(
+            config.CONTENT_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+
+        summary_vectordb = FAISS.load_local(
+            config.SUMMARY_DB_PATH,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+        print("   ✅ Vector databases loaded successfully")
+
+        # Step 3: Generate query embedding based on retrieval type
+        print(f"🔢 Generating query embedding (type: {config.RETRIEVAL_TYPE})...")
+
+        if config.RETRIEVAL_TYPE == "summary":
+            query_explanation = utils.generate_summary(query_text)
+            search_query = query_explanation
+        elif config.RETRIEVAL_TYPE == "hyde":
+            # For hybrid, we'll use the original query for BM25 and HyDE embedding for vector search
+            hydes = []
+            for _ in range(5):
+                try:
+                    hypo_doc = utils.generate_hyde_document(query_text)
+                    embedding = model.encode(hypo_doc, normalize_embeddings=True)
+                    hydes.append(embedding)
+                except Exception as e:
+                    print(f"   Warning: Error generating HyDE document: {e}")
+                    continue
+
+            if hydes:
+                query_emb = np.mean(np.stack(hydes, axis=0), axis=0)
+                norm = np.linalg.norm(query_emb)
+                if norm > 0:
+                    query_emb /= norm
+            else:
+                print("   Warning: No HyDE documents generated, using original query")
+                query_emb = model.encode(query_text, normalize_embeddings=True)
+            search_query = query_text  # Use original query for BM25
+        else:
+            query_emb = model.encode(query_text, normalize_embeddings=True)
+            search_query = query_text
+
+        print(f"   ✅ Query embedding generated")
+
+        # Step 4: Hybrid retrieval from content database
+        print("🔍 Performing hybrid retrieval from content database...")
+
+        # Vector similarity search
+        content_vector_docs = content_vectordb.similarity_search_by_vector(
+            query_emb, k=config.TOP_K * 2
+        )
+
+        # BM25 search
+        all_content_docs = list(content_vectordb.docstore._dict.values())
+        content_bm25_retriever = BM25Retriever.from_documents(all_content_docs)
+        content_bm25_retriever.k = config.TOP_K * 2
+        content_bm25_docs = content_bm25_retriever.get_relevant_documents(search_query)
+
+        # Combine using ensemble retriever
+        content_faiss_retriever = content_vectordb.as_retriever(
+            search_kwargs={"k": config.TOP_K * 2}
+        )
+        content_ensemble_retriever = EnsembleRetriever(
+            retrievers=[content_faiss_retriever, content_bm25_retriever],
+            weights=weights,
+        )
+
+        sem = content_ensemble_retriever.get_relevant_documents(search_query)[
+            : config.TOP_K
+        ]
+        print(f"   ✅ Retrieved {len(sem)} content documents via hybrid search")
+
+        # Step 5: Create expanded query with content
+        print("📝 Creating expanded query with content...")
+        content_texts = [doc.page_content for doc in sem]
+        query_with_content = query_text + "\n" + "\n".join(content_texts)
+
+        query_with_content_embed = model.encode(
+            query_with_content,
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
+        print(f"   ✅ Expanded query embedding generated")
+
+        # Step 6: Hybrid retrieval from summary/examples database
+        print("🔍 Performing hybrid retrieval from summary/examples database...")
+
+        # Vector similarity search
+        summary_vector_docs = summary_vectordb.similarity_search_by_vector(
+            query_with_content_embed, k=config.TOP_K * 2
+        )
+
+        # BM25 search
+        all_summary_docs = list(summary_vectordb.docstore._dict.values())
+        summary_bm25_retriever = BM25Retriever.from_documents(all_summary_docs)
+        summary_bm25_retriever.k = config.TOP_K * 2
+        summary_bm25_docs = summary_bm25_retriever.get_relevant_documents(
+            query_with_content
+        )
+
+        # Combine using ensemble retriever
+        summary_faiss_retriever = summary_vectordb.as_retriever(
+            search_kwargs={"k": config.TOP_K * 2}
+        )
+        summary_ensemble_retriever = EnsembleRetriever(
+            retrievers=[summary_faiss_retriever, summary_bm25_retriever],
+            weights=weights_examples,
+        )
+
+        summary_sem = summary_ensemble_retriever.get_relevant_documents(
+            query_with_content
+        )[: config.TOP_K]
+        print(f"   ✅ Retrieved {len(summary_sem)} summary documents via hybrid search")
+
+        # Step 7: Load parent documents
+        print("📂 Loading parent documents...")
+        parent_child_matching_dir = Path(
+            "./vectordb/jina_processed/examples_original.jsonl"
+        )
+
+        if not parent_child_matching_dir.exists():
+            print(
+                f"   ⚠️ Warning: Parent-child mapping file not found at {parent_child_matching_dir}"
+            )
+            parent_docs = []
+        else:
+            parent_ids = [
+                d.metadata.get("parent_id")
+                for d in summary_sem
+                if d.metadata.get("parent_id")
+            ]
+            parent_doc_map = {}
+
+            with open(parent_child_matching_dir, "r", encoding="utf-8") as f:
+                for line in f:
+                    parent_doc = json.loads(line)
+                    parent_doc_map[parent_doc["id"].replace("parent-", "")] = parent_doc
+
+            parent_docs = []
+            for parent_id in parent_ids:
+                if parent_id in parent_doc_map:
+                    parent_docs.append(parent_doc_map[parent_id])
+
+            print(f"   ✅ Loaded {len(parent_docs)} parent documents")
+
+        # Step 8: Calculate similarity scores (for consistency with parent_retrieve)
+        print("📊 Calculating similarity scores...")
+
+        # Content document embeddings
+        content_doc_vecs = model.encode(
+            [d.page_content for d in sem],
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
+
+        # Summary document embeddings
+        summary_doc_vecs = model.encode(
+            [d.page_content for d in summary_sem],
+            convert_to_tensor=False,
+            normalize_embeddings=True,
+        )
+
+        # Calculate cosine similarities
+        content_query_cos_sim = (
+            util.cos_sim(query_emb, content_doc_vecs)[0].float().cpu().numpy()
+        )
+        summary_query_cos_sim = (
+            util.cos_sim(query_emb, summary_doc_vecs)[0].float().cpu().numpy()
+        )
+        summary_expanded_query_cos_sim = (
+            util.cos_sim(query_with_content_embed, summary_doc_vecs)[0]
+            .float()
+            .cpu()
+            .numpy()
+        )
+
+        print(f"   ✅ Similarity scores calculated")
+
+        # Step 9: Save similarity scores
+        print("💾 Saving similarity scores...")
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(
+            output_dir / "content_query_similarity_score.json", "w", encoding="utf-8"
+        ) as f:
+            json.dump(content_query_cos_sim.tolist(), f, ensure_ascii=False)
+
+        with open(
+            output_dir / "summary_query_similarity_score.json", "w", encoding="utf-8"
+        ) as f:
+            json.dump(summary_query_cos_sim.tolist(), f, ensure_ascii=False)
+
+        with open(
+            output_dir / "content_expanded_query_similarity_score.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(summary_expanded_query_cos_sim.tolist(), f, ensure_ascii=False)
+
+        print("   ✅ All similarity scores saved")
+        print("✅ parent_retrieve_hybrid completed successfully")
+
+        return sem, parent_docs
+
+    except Exception as e:
+        print(f"❌ Error in parent_retrieve_hybrid: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return [], []
