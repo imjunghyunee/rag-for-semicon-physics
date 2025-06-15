@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from langgraph.graph import StateGraph
 from rag_pipeline.graph_state import GraphState
-from rag_pipeline import nodes
+from rag_pipeline import nodes, config
 from typing import List
 
 
@@ -14,73 +14,68 @@ def build_graph(
 ):
     g = StateGraph(GraphState)
 
-    # Simple/Complex routing function
+    # Routing function for complexity
     def route_complexity(state: GraphState) -> str:
         """Route based on query complexity"""
         decision = state.get("next", "simple")
         return decision
 
-    # Nodes
+    # 1. Entry point: Extract variables
+    g.add_node("extract_variables", nodes.node_extract_variables)
+
+    # 2. Complexity check
     g.add_node("complexity_check", nodes.node_simple_or_not)
 
-    # Simple query processing nodes
-    if pdf_path:
-        g.add_node(
-            "retrieve_simple", lambda s: nodes.node_retrieve_file_embedding(s, pdf_path)
-        )
-    elif img_path:
-        g.add_node(
-            "retrieve_simple", lambda s: nodes.node_retrieve_img_embedding(s, img_path)
-        )
-    elif retrieval_type == "hyde" and hybrid_weights:
-        g.add_node("retrieve_simple", nodes.node_retrieve_hyde_hybrid)
-    elif retrieval_type == "hyde":
-        g.add_node("retrieve_simple", nodes.node_retrieve_hyde)
-    elif retrieval_type == "summary" and hybrid_weights:
-        g.add_node("retrieve_simple", nodes.node_retrieve_summary_hybrid)
-    elif retrieval_type == "summary":
-        g.add_node("retrieve_simple", nodes.node_retrieve_summary)
-    elif hybrid_weights:
-        g.add_node("retrieve_simple", nodes.node_retrieve_hybrid)
-    else:
-        g.add_node("retrieve_simple", nodes.node_retrieve)
+    # 3. Query expansion retrieval (used for both simple and complex)
+    g.add_node("query_expansion_retrieve", nodes.node_query_expansion_retrieve)
 
-    g.add_node("relevance_check", nodes.node_relevance_check)
-    g.add_node("llm_answer_simple", nodes.node_llm_answer)
+    # 4. Simple query path
+    g.add_node("simple_answer", nodes.node_simple_llm_answer)
 
-    # Complex query processing nodes - 초기 상태 정보를 전달하는 래퍼 함수들
-    # def query_decomposition_with_params(state: GraphState) -> GraphState:
-    #     # 초기화 시 전달받은 파라미터들을 상태에 추가
-    #     if retrieval_type and "retrieval_type" not in state:
-    #         state["retrieval_type"] = retrieval_type
-    #     if hybrid_weights and "hybrid_weights" not in state:
-    #         state["hybrid_weights"] = hybrid_weights
-    #     return nodes.node_query_decomposition(state)
+    # 5. Complex query path
 
-    # g.add_node("query_decomposition", query_decomposition_with_params)
-    g.add_node("query_decomposition", nodes.node_query_decomposition)
-    g.add_node("llm_answer_complex", nodes.node_complex_llm_answer)
+    g.add_node(
+        "query_decomposition_expansion", nodes.node_query_decomposition_with_expansion
+    )
+    g.add_node("complex_answer", nodes.node_complex_llm_answer)
 
-    # Entry point
-    g.set_entry_point("complexity_check")
+    # Set entry point
+    g.set_entry_point("extract_variables")
 
-    # Conditional edges based on complexity
+    # Build the workflow
+    g.add_edge("extract_variables", "complexity_check")
+
+    # After complexity check, always do query expansion
     g.add_conditional_edges(
         "complexity_check",
         route_complexity,
         {
-            "simple": "retrieve_simple",
-            "complex": "query_decomposition",
+            "simple": "query_expansion_retrieve",
+            "complex": "query_expansion_retrieve",
         },
     )
 
-    # Simple query path
-    g.add_edge("retrieve_simple", "relevance_check")
-    g.add_edge("relevance_check", "llm_answer_simple")
-    g.add_edge("llm_answer_simple", "__end__")
+    # After query expansion, route to appropriate processing
+    def route_after_expansion(state: GraphState) -> str:
+        """Route after query expansion based on original complexity decision"""
+        decision = state.get("next", "simple")
+        if decision == "complex":
+            return "query_decomposition_expansion"
+        else:
+            return "simple_answer"
 
-    # Complex query path
-    g.add_edge("query_decomposition", "llm_answer_complex")
-    g.add_edge("llm_answer_complex", "__end__")
+    g.add_conditional_edges(
+        "query_expansion_retrieve",
+        route_after_expansion,
+        {
+            "simple_answer": "simple_answer",
+            "query_decomposition_expansion": "query_decomposition_expansion",
+        },
+    )
+
+    # Final edges
+    g.add_edge("simple_answer", "__end__")
+    g.add_edge("query_decomposition_expansion", "complex_answer")
+    g.add_edge("complex_answer", "__end__")
 
     return g.compile()

@@ -14,8 +14,16 @@ class GraphState(TypedDict, total=False):
     filtered_scores: Annotated[List[float], "Filtered Scores"]
     # Query decomposition related states
     subquestions: Annotated[List[str], "Sub-questions for complex queries"]
-    subquestion_results: Annotated[List[Dict[str, Any]], "Results from sub-question processing"]
+    subquestion_results: Annotated[
+        List[Dict[str, Any]], "Results from sub-question processing"
+    ]
     combined_context: Annotated[str, "Combined context from all sub-questions"]
     retrieval_type: Annotated[str, "Type of retrieval (hyde, summary, etc.)"]
     hybrid_weights: Annotated[List[float], "Hybrid retrieval weights"]
     next: Annotated[str, "Next node to execute"]
+    # New fields for variable extraction and query expansion
+    extracted_variables: Annotated[str, "Extracted variables from user query"]
+    content_docs: Annotated[List[Document], "Content documents from query expansion"]
+    example_docs: Annotated[
+        List[Dict[str, Any]], "Example documents from query expansion"
+    ]

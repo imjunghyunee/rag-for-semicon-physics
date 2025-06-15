@@ -199,21 +199,33 @@ def generate_hyde_document(query_text: str) -> str:
 
 
 def generate_llm_answer(query_text: str, context: str) -> str:
-    """Generate final answer using OpenAI API."""
+    """Generate final answer using OpenAI API with improved context handling."""
     response = client.chat.completions.create(
         model=config.OPENAI_MODEL,
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant that generates answers based on the provided question and context.",
+                "content": """You are a helpful assistant specializing in semiconductor physics that generates accurate answers based on the provided question and context.
+
+When answering:
+1. Use the provided context as your primary information source
+2. If the context includes previous questions and answers, build upon that knowledge
+3. Provide technically accurate information for semiconductor physics domain
+4. Be clear and concise while being comprehensive
+5. If information is insufficient, acknowledge the limitations
+
+The context may include:
+- Previous questions and answers from earlier steps
+- Current retrieved documents
+- Technical specifications and data""",
             },
             {
                 "role": "user",
-                "content": f"[Question]:{query_text}, [Context]:{context}",
+                "content": f"Question: {query_text}\n\nContext:\n{context}",
             },
         ],
         max_tokens=5000,
-        temperature=0.5,
+        temperature=0.3,
         top_p=0.95,
     )
     return response.choices[0].message.content
@@ -221,7 +233,7 @@ def generate_llm_answer(query_text: str, context: str) -> str:
 
 def check_query_complexity(query_text: str) -> str:
     """Determine if the question requires simple retrieval or complex multi-hop reasoning."""
-    
+
     try:
         response = client.chat.completions.create(
             model=config.OPENAI_MODEL,
@@ -250,36 +262,52 @@ Additional complexity indicators:
 - Questions requiring synthesis of multiple physics concepts
 - Problems involving device design or performance optimization
 
-Respond with ONLY one word: "simple" or "complex" """
+Respond with ONLY one word: "simple" or "complex" """,
                 },
                 {
                     "role": "user",
-                    "content": f"Categorize this semiconductor physics question: {query_text}"
+                    "content": f"Categorize this semiconductor physics question: {query_text}",
                 },
             ],
             max_tokens=10,
             temperature=0.1,
             top_p=0.95,
         )
-        
+
         decision = response.choices[0].message.content.strip().lower()
-        
+
         # 추가 검증 로직
         if decision not in ["simple", "complex"]:
-            print(f"Warning: Invalid complexity decision '{decision}', applying fallback logic")
+            print(
+                f"Warning: Invalid complexity decision '{decision}', applying fallback logic"
+            )
             # 폴백 로직: 특정 키워드 기반 판별
             complex_indicators = [
-                "compare", "analyze", "trade-off", "optimize", "design", 
-                "multiple", "both", "relationship between", "how does",
-                "calculate and", "determine the effect", "multi-step",
-                "synthesis", "integration", "performance", "efficiency"
+                "compare",
+                "analyze",
+                "trade-off",
+                "optimize",
+                "design",
+                "multiple",
+                "both",
+                "relationship between",
+                "how does",
+                "calculate and",
+                "determine the effect",
+                "multi-step",
+                "synthesis",
+                "integration",
+                "performance",
+                "efficiency",
             ]
-            
+
             question_lower = query_text.lower()
-            
+
             # 복잡성 점수 계산
-            complexity_score = sum(1 for indicator in complex_indicators if indicator in question_lower)
-            
+            complexity_score = sum(
+                1 for indicator in complex_indicators if indicator in question_lower
+            )
+
             # 추가적인 복잡성 지표들
             if len(query_text.split()) > 15:  # 긴 질문은 복잡할 가능성이 높음
                 complexity_score += 1
@@ -287,13 +315,57 @@ Respond with ONLY one word: "simple" or "complex" """
                 complexity_score += 1
             if any(word in question_lower for word in ["step", "process", "procedure"]):
                 complexity_score += 1
-                
+
             decision = "complex" if complexity_score >= 2 else "simple"
-                
+
         print(f"Question complexity determined as: {decision}")
         return decision
-        
+
     except Exception as e:
         print(f"Error in complexity check: {e}")
         # 에러 발생 시 안전한 기본값
         return "simple"
+
+
+def extract_variables(query_text: str) -> str:
+    """Extract meaningful variables and their values from the user query."""
+    response = client.chat.completions.create(
+        model=config.OPENAI_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": """You are an expert in semiconductor physics who specializes in extracting variables and their values from technical questions.
+
+Extract all meaningful variables, parameters, values, and units mentioned in the question. Present them in a structured dictionary format.
+
+Examples:
+- Question: "What is the electron mobility in silicon at 300K with doping concentration of 1e16 cm^-3?"
+- Variables: {"temperature": "300K", "doping_concentration": "1e16 cm^-3", "material": "silicon", "carrier_type": "electron", "property": "mobility"}
+
+- Question: "Calculate the threshold voltage for a MOSFET with gate oxide thickness of 5nm and substrate doping of 1e15 cm^-3"
+- Variables: {"device_type": "MOSFET", "gate_oxide_thickness": "5nm", "substrate_doping": "1e15 cm^-3", "property": "threshold voltage"}
+
+Include units when specified, material properties, device types, physical conditions, and any numerical values.
+If no clear variables are found, return an empty dictionary.
+
+Respond ONLY with the dictionary format as a string.""",
+            },
+            {
+                "role": "user",
+                "content": f"Extract variables from this semiconductor physics question: {query_text}",
+            },
+        ],
+        max_tokens=500,
+        temperature=0.2,
+    )
+
+    try:
+        variables_str = response.choices[0].message.content.strip()
+        # Validate that it's a reasonable dictionary-like string
+        if variables_str.startswith("{") and variables_str.endswith("}"):
+            return variables_str
+        else:
+            return "{}"
+    except Exception as e:
+        print(f"Error extracting variables: {e}")
+        return "{}"

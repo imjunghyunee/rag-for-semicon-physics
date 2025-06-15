@@ -1019,7 +1019,7 @@ where
 and is called the dielectric relaxation time constant.
 
 
-### EXAMPLE 6.6
+## EXAMPLE 6.6
 
 **Objective**: Calculate the dielectric relaxation time constant for a particular semiconductor.
 

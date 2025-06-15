@@ -52,6 +52,24 @@ def node_retrieve_summary_hybrid(state: GraphState) -> GraphState:
     return {"context": context, "explanation": explanation}
 
 
+def node_retrieve_summary_mean(state: GraphState) -> GraphState:
+    query: str = state["question"][-1]
+    context, explanation = retrievers.summary_mean_retrieve(query)
+    return {"context": context, "explanation": explanation}
+
+
+def node_retrieve_summary_mean_hybrid(state: GraphState) -> GraphState:
+    query: str = state["question"][-1]
+
+    # 하이브리드 가중치 확인
+    hybrid_weights = state.get("hybrid_weights", [0.5, 0.5])
+
+    context, explanation = retrievers.summary_mean_retrieve_hybrid(
+        query, weights=hybrid_weights
+    )
+    return {"context": context, "explanation": explanation}
+
+
 def node_retrieve_hyde(state: GraphState) -> GraphState:
     query: str = state["question"][-1]
     context, explanation = retrievers.hyde_retrieve(query)
@@ -161,9 +179,6 @@ def node_llm_answer(state: GraphState) -> GraphState:
             "answer": f"Error generating answer: {str(e)}",
             "messages": [("assistant", f"Error: {str(e)}")],
         }
-
-
-# def node_llm_answer_parent
 
 
 def node_simple_or_not(state: GraphState) -> dict:
@@ -473,4 +488,256 @@ def node_parent_retrieve_hybrid(state: GraphState) -> GraphState:
         return {
             "context": [],
             "examples": [],
+        }
+
+
+def node_extract_variables(state: GraphState) -> GraphState:
+    """Extract meaningful variables from the user query."""
+    query: str = state["question"][-1]
+
+    try:
+        extracted_variables = utils.extract_variables(query)
+        print(f"Extracted variables: {extracted_variables}")
+        return {"extracted_variables": extracted_variables}
+    except Exception as e:
+        print(f"Error in variable extraction: {e}")
+        return {"extracted_variables": "{}"}
+
+
+def node_query_decomposition_with_expansion(state: GraphState) -> GraphState:
+    """Query decomposition using pre-retrieved content and examples"""
+    try:
+        query: str = state["question"][-1]
+        content_docs = state.get("content_docs", [])
+        example_docs = state.get("example_docs", [])
+
+        hybrid_weight_embedding = config.HYBRID_WEIGHT
+        hybrid_weight_bm25 = 1 - hybrid_weight_embedding
+        hybrid_weights = [hybrid_weight_embedding, hybrid_weight_bm25]
+        retrieval_type = config.RETRIEVAL_TYPE
+
+        print(f"Starting query decomposition with expansion for: {query}")
+
+        from rag_pipeline.query_decomposition import (
+            process_complex_query_with_expansion,
+        )
+
+        decomposition_result = process_complex_query_with_expansion(
+            original_query=query,
+            content_docs=content_docs,
+            example_docs=example_docs,
+            retrieval_type=retrieval_type,
+            hybrid_weights=hybrid_weights,
+            max_subquestions=5,
+        )
+
+        return {
+            "subquestions": decomposition_result["subquestions"],
+            "subquestion_results": decomposition_result["subquestion_results"],
+            "combined_context": decomposition_result["combined_context"],
+        }
+
+    except Exception as e:
+        print(f"Error in query decomposition with expansion: {e}")
+        return {
+            "subquestions": [state["question"][-1]],
+            "subquestion_results": [],
+            "combined_context": "",
+        }
+
+
+def node_query_expansion_retrieve(state: GraphState) -> GraphState:
+    """Query expansion retrieval node for content and examples databases"""
+    query: str = state["question"][-1]
+
+    try:
+        content_docs, examples_docs = retrievers.query_expansion_retrieve(query)
+
+        return {
+            "content_docs": content_docs,
+            "example_docs": examples_docs,
+        }
+
+    except Exception as e:
+        print(f"Error in query expansion retrieve: {e}")
+        return {
+            "content_docs": [],
+            "example_docs": [],
+        }
+
+
+def node_simple_llm_answer(state: GraphState) -> GraphState:
+    """Generate answer for simple queries using extracted variables + content + examples"""
+    try:
+        query: str = state["question"][-1]
+        extracted_variables = state.get("extracted_variables", "{}")
+        content_docs = state.get("content_docs", [])
+        example_docs = state.get("example_docs", [])
+
+        # Build comprehensive context
+        context_parts = []
+
+        # Add extracted variables
+        if extracted_variables and extracted_variables != "{}":
+            context_parts.append(f"Extracted Variables: {extracted_variables}")
+
+        # Add content documents
+        if content_docs:
+            content_texts = []
+            for doc in content_docs:
+                if hasattr(doc, "page_content"):
+                    content_texts.append(doc.page_content)
+                else:
+                    content_texts.append(str(doc))
+            if content_texts:
+                context_parts.append(
+                    "Content Documents:\n" + "\n\n---\n\n".join(content_texts)
+                )
+
+        # Add example documents
+        if example_docs:
+            example_texts = []
+            for doc in example_docs:
+                if isinstance(doc, dict):
+                    example_texts.append(doc.get("page_content", str(doc)))
+                elif hasattr(doc, "page_content"):
+                    example_texts.append(doc.page_content)
+                else:
+                    example_texts.append(str(doc))
+            if example_texts:
+                context_parts.append(
+                    "Example Documents:\n" + "\n\n---\n\n".join(example_texts)
+                )
+
+        if not context_parts:
+            return {
+                "answer": f"No context available to answer the question: {query}",
+                "messages": [("assistant", "No context available")],
+            }
+
+        full_context = "\n\n=== SECTION SEPARATOR ===\n\n".join(context_parts)
+
+        answer = utils.generate_llm_answer(query, full_context)
+        if not isinstance(answer, str):
+            answer = str(answer)
+
+        return {"answer": answer, "messages": [("assistant", answer)]}
+
+    except Exception as e:
+        print(f"Error in simple LLM answer generation: {e}")
+        return {
+            "answer": f"Error generating answer: {str(e)}",
+            "messages": [("assistant", f"Error: {str(e)}")],
+        }
+
+
+def node_complex_llm_answer(state: GraphState) -> GraphState:
+    """Generate answer for complex queries using extracted variables + content + examples + subquestion results"""
+    try:
+        query: str = state["question"][-1]
+        extracted_variables = state.get("extracted_variables", "{}")
+        content_docs = state.get("content_docs", [])
+        example_docs = state.get("example_docs", [])
+        subquestion_results = state.get("subquestion_results", [])
+
+        # Build comprehensive context
+        context_parts = []
+
+        # Add extracted variables
+        if extracted_variables and extracted_variables != "{}":
+            context_parts.append(f"Extracted Variables: {extracted_variables}")
+
+        # Add content documents
+        if content_docs:
+            content_texts = []
+            for doc in content_docs:
+                if hasattr(doc, "page_content"):
+                    content_texts.append(doc.page_content)
+                else:
+                    content_texts.append(str(doc))
+            if content_texts:
+                context_parts.append(
+                    "Content Documents:\n" + "\n\n---\n\n".join(content_texts)
+                )
+
+        # Add example documents
+        if example_docs:
+            example_texts = []
+            for doc in example_docs:
+                if isinstance(doc, dict):
+                    example_texts.append(doc.get("page_content", str(doc)))
+                elif hasattr(doc, "page_content"):
+                    example_texts.append(doc.page_content)
+                else:
+                    example_texts.append(str(doc))
+            if example_texts:
+                context_parts.append(
+                    "Example Documents:\n" + "\n\n---\n\n".join(example_texts)
+                )
+
+        # Add subquestion results
+        if subquestion_results:
+            subq_parts = []
+            for i, result in enumerate(subquestion_results, 1):
+                subq_parts.append(f"Sub-question {i}: {result.get('question', '')}")
+                subq_parts.append(f"Answer {i}: {result.get('answer', '')}")
+            if subq_parts:
+                context_parts.append("Sub-question Analysis:\n" + "\n".join(subq_parts))
+
+        if not context_parts:
+            return {
+                "answer": f"No context available to answer the complex question: {query}",
+                "messages": [("assistant", "No context available")],
+            }
+
+        full_context = "\n\n=== SECTION SEPARATOR ===\n\n".join(context_parts)
+
+        # Use specialized prompt for complex queries
+        try:
+            response = utils.client.chat.completions.create(
+                model=config.OPENAI_MODEL,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """You are an expert in semiconductor physics who excels at providing comprehensive answers to complex technical questions.
+
+You have been provided with:
+1. Extracted variables from the original question
+2. Relevant content documents from technical sources
+3. Example documents with similar problems/solutions
+4. Step-by-step analysis from sub-questions
+
+Synthesize all this information to provide a complete, technically accurate answer that:
+- Addresses the original complex question directly
+- Uses the extracted variables appropriately
+- References relevant information from the provided context
+- Shows clear reasoning connecting sub-question insights
+- Provides quantitative results when applicable
+- Explains the underlying physics principles
+
+Structure your response clearly with proper technical language.""",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Original Question: {query}\n\nContext:\n{full_context}",
+                    },
+                ],
+                max_tokens=2000,
+                temperature=0.3,
+            )
+            answer = response.choices[0].message.content
+        except Exception as e:
+            print(f"Error in complex answer generation: {e}")
+            answer = utils.generate_llm_answer(query, full_context)
+
+        if not isinstance(answer, str):
+            answer = str(answer)
+
+        return {"answer": answer, "messages": [("assistant", answer)]}
+
+    except Exception as e:
+        print(f"Error in complex LLM answer generation: {e}")
+        return {
+            "answer": f"Error generating complex answer: {str(e)}",
+            "messages": [("assistant", f"Error: {str(e)}")],
         }

@@ -105,12 +105,14 @@ def retrieve_from_file_embedding(
         search_query = query_text
     elif config.RETRIEVAL_TYPE == "hyde":
         # Generate HyDE documents and use their average embedding
+        hypo_docs = []
         hydes = []
         for _ in range(5):
             try:
                 hypo_doc = utils.generate_hyde_document(query_text)
                 embedding = model.encode(hypo_doc, normalize_embeddings=True)
-                hydes.append(embedding)
+                hypo_docs.append(hypo_doc)  # 텍스트 저장
+                hydes.append(embedding)  # 벡터 저장
             except Exception as e:
                 print(f"Error generating HyDE document: {e}")
                 continue
@@ -122,18 +124,47 @@ def retrieve_from_file_embedding(
                 mean_hyde /= norm
             q_vecs = mean_hyde
         else:
-            q_vecs = model.encode([query_text], normalize_embeddings=True)[0]
-        search_query = None  # We already have the query vector
+            q_vecs = model.encode(
+                [query_text], convert_to_tensor=True, normalize_embeddings=True
+            )[0]
+        search_query = None
     elif config.RETRIEVAL_TYPE == "summary":
         search_query = utils.generate_summary(query_text)
+    elif config.RETRIEVAL_TYPE == "summary_mean":
+        # Generate multiple summaries and use their average embedding
+        summaries = []
+        summary_texts = []
+        for _ in range(5):
+            try:
+                summary_text = utils.generate_summary(query_text)
+                embedding = model.encode(summary_text, normalize_embeddings=True)
+                summary_texts.append(summary_text)
+                summaries.append(embedding)
+            except Exception as e:
+                print(f"Error generating summary: {e}")
+                continue
+
+        if summaries:
+            mean_summary = np.mean(np.stack(summaries, axis=0), axis=0)
+            norm = np.linalg.norm(mean_summary)
+            if norm > 0:
+                mean_summary /= norm
+            q_vecs = mean_summary
+        else:
+            q_vecs = model.encode(
+                [query_text], convert_to_tensor=True, normalize_embeddings=True
+            )[0]
+        search_query = None
     else:
         search_query = query_text
 
     # Calculate similarity scores
-    doc_vecs = model.encode(texts, normalize_embeddings=True)
+    doc_vecs = model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)
 
     if search_query is not None:
-        q_vecs = model.encode([search_query], normalize_embeddings=True)[0]
+        q_vecs = model.encode(
+            [search_query], convert_to_tensor=True, normalize_embeddings=True
+        )[0]
 
     # Vector similarity scores
     cos_sim = util.cos_sim(q_vecs, doc_vecs)[0].float().cpu().numpy()
@@ -145,30 +176,12 @@ def retrieve_from_file_embedding(
         tokenized_docs = [doc.split() for doc in texts]
         bm25 = BM25Okapi(tokenized_docs)
 
-        # Get BM25 scores
-        if config.RETRIEVAL_TYPE == "summary":
-            bm25_query = utils.generate_summary(query_text).split()
-        elif config.RETRIEVAL_TYPE == "hyde":
-            # Generate HyDE documents for BM25 as well
-            hyde_docs_for_bm25 = []
-            for _ in range(5):
-                try:
-                    hypo_doc = utils.generate_hyde_document(query_text)
-                    hyde_docs_for_bm25.append(hypo_doc)
-                except Exception as e:
-                    print(f"Error generating HyDE document for BM25: {e}")
-                    continue
+        if config.RETRIEVAL_TYPE == "hyde":
+            search_query = hypo_docs[0] if hypo_docs else query_text
+        elif config.RETRIEVAL_TYPE == "summary_mean":
+            search_query = summary_texts[0] if summary_texts else query_text
 
-            if hyde_docs_for_bm25:
-                # Combine all HyDE documents for BM25 query
-                combined_hyde_text = " ".join(hyde_docs_for_bm25)
-                bm25_query = combined_hyde_text.split()
-            else:
-                # Fallback to original query if HyDE generation fails
-                bm25_query = query_text.split()
-        else:
-            bm25_query = query_text.split()
-
+        bm25_query = search_query.split()
         bm25_scores = np.array(bm25.get_scores(bm25_query))
 
         # Normalize BM25 scores to [0, 1]
@@ -196,6 +209,21 @@ def retrieve_from_file_embedding(
 
     with open(config.SCORE_PATH, "w") as f:
         json.dump(best_scores.tolist(), f)
+
+    # Apply reranking if enabled
+    if config.RERANK:
+        print("🔄 Applying reranking...")
+        try:
+            reranked_docs, scores = _rerank(query_text, best_docs)
+            print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+            print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+            return reranked_docs
+        except Exception as rerank_error:
+            print(f"   ❌ Reranking failed: {rerank_error}")
+            print(f"   Falling back to original results")
+            return best_docs
+    else:
+        print("⏭️ Skipping reranking (disabled)")
 
     return best_docs
 
@@ -219,11 +247,13 @@ def retrieve_from_img_embedding(
     elif config.RETRIEVAL_TYPE == "hyde":
         # Generate HyDE documents and use their average embedding
         hydes = []
+        hypo_docs = []
         for _ in range(5):
             try:
                 hypo_doc = utils.generate_hyde_document(query_text)
                 embedding = model.encode(hypo_doc, normalize_embeddings=True)
                 hydes.append(embedding)
+                hypo_docs.append(hypo_doc)
             except Exception as e:
                 print(f"Error generating HyDE document: {e}")
                 continue
@@ -235,18 +265,47 @@ def retrieve_from_img_embedding(
                 mean_hyde /= norm
             q_vecs = mean_hyde
         else:
-            q_vecs = model.encode([query_text], normalize_embeddings=True)[0]
-        search_query = None  # We already have the query vector
+            q_vecs = model.encode(
+                [query_text], convert_to_tensor=True, normalize_embeddings=True
+            )[0]
+        search_query = None
     elif config.RETRIEVAL_TYPE == "summary":
         search_query = utils.generate_summary(query_text)
+    elif config.RETRIEVAL_TYPE == "summary_mean":
+        # Generate multiple summaries and use their average embedding
+        summaries = []
+        summary_texts = []
+        for _ in range(5):
+            try:
+                summary_text = utils.generate_summary(query_text)
+                embedding = model.encode(summary_text, normalize_embeddings=True)
+                summary_texts.append(summary_text)
+                summaries.append(embedding)
+            except Exception as e:
+                print(f"Error generating summary: {e}")
+                continue
+
+        if summaries:
+            mean_summary = np.mean(np.stack(summaries, axis=0), axis=0)
+            norm = np.linalg.norm(mean_summary)
+            if norm > 0:
+                mean_summary /= norm
+            q_vecs = mean_summary
+        else:
+            q_vecs = model.encode(
+                [query_text], convert_to_tensor=True, normalize_embeddings=True
+            )[0]
+        search_query = None
     else:
         search_query = query_text
 
     # Calculate similarity scores
-    doc_vecs = model.encode(texts, normalize_embeddings=True)
+    doc_vecs = model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)
 
     if search_query is not None:
-        q_vecs = model.encode([search_query], normalize_embeddings=True)[0]
+        q_vecs = model.encode(
+            [search_query], convert_to_tensor=True, normalize_embeddings=True
+        )[0]
 
     # Vector similarity scores
     cos_sim = util.cos_sim(q_vecs, doc_vecs)[0].float().cpu().numpy()
@@ -258,30 +317,12 @@ def retrieve_from_img_embedding(
         tokenized_docs = [doc.split() for doc in texts]
         bm25 = BM25Okapi(tokenized_docs)
 
-        # Get BM25 scores
-        if config.RETRIEVAL_TYPE == "summary":
-            bm25_query = utils.generate_summary(query_text).split()
-        elif config.RETRIEVAL_TYPE == "hyde":
-            # Generate HyDE documents for BM25 as well
-            hyde_docs_for_bm25 = []
-            for _ in range(5):
-                try:
-                    hypo_doc = utils.generate_hyde_document(query_text)
-                    hyde_docs_for_bm25.append(hypo_doc)
-                except Exception as e:
-                    print(f"Error generating HyDE document for BM25: {e}")
-                    continue
+        if config.RETRIEVAL_TYPE == "hyde":
+            search_query = hypo_docs[0] if hypo_docs else query_text
+        elif config.RETRIEVAL_TYPE == "summary_mean":
+            search_query = summary_texts[0] if summary_texts else query_text
 
-            if hyde_docs_for_bm25:
-                # Combine all HyDE documents for BM25 query
-                combined_hyde_text = " ".join(hyde_docs_for_bm25)
-                bm25_query = combined_hyde_text.split()
-            else:
-                # Fallback to original query if HyDE generation fails
-                bm25_query = query_text.split()
-        else:
-            bm25_query = query_text.split()
-
+        bm25_query = search_query.split()
         bm25_scores = np.array(bm25.get_scores(bm25_query))
 
         # Normalize BM25 scores to [0, 1]
@@ -309,6 +350,21 @@ def retrieve_from_img_embedding(
 
     with open(config.SCORE_PATH, "w") as f:
         json.dump(best_scores.tolist(), f)
+
+    # Apply reranking if enabled
+    if config.RERANK:
+        print("🔄 Applying reranking...")
+        try:
+            reranked_docs, scores = _rerank(query_text, best_docs)
+            print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+            print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+            return reranked_docs
+        except Exception as rerank_error:
+            print(f"   ❌ Reranking failed: {rerank_error}")
+            print(f"   Falling back to original results")
+            return best_docs
+    else:
+        print("⏭️ Skipping reranking (disabled)")
 
     return best_docs
 
@@ -435,7 +491,7 @@ def vectordb_retrieve(query: HumanMessage | str) -> List[Document]:
 
 
 def vectordb_hybrid_retrieve(
-    query: HumanMessage | str, weights: List[float] = [0.5, 0.5]
+    query: HumanMessage | str, weights: List[float]
 ) -> List[Document]:
     """FAISS + BM25 하이브리드 검색 - 반환값 일관성 수정"""
     try:
@@ -446,28 +502,66 @@ def vectordb_hybrid_retrieve(
             embeddings=embeddings,
             allow_dangerous_deserialization=True,
         )
-        faiss_retriever = vectordb.as_retriever(search_kwargs={"k": config.TOP_K})
 
-        all_docs = list(vectordb.docstore._dict.values())
-        bm25_retriever = BM25Retriever.from_documents(all_docs)
-        bm25_retriever.k = config.TOP_K
+        # Use weighted sum hybrid approach instead of ensemble retriever
+        all_docs: List[Document] = list(vectordb.docstore._dict.values())
+        texts: List[str] = [doc.page_content for doc in all_docs]
 
-        ensemble_retriever = EnsembleRetriever(
-            retrievers=[faiss_retriever, bm25_retriever],
-            weights=weights,
+        # Vector similarity scores
+        query_emb = model.encode(
+            query_text, convert_to_tensor=False, normalize_embeddings=True
         )
+        doc_vecs = model.encode(
+            texts, convert_to_tensor=True, normalize_embeddings=True
+        )
+        cos_sim_scores = util.cos_sim(query_emb, doc_vecs)[0].cpu().numpy()
 
-        sem = ensemble_retriever.get_relevant_documents(query_text)
+        # BM25 scores
+        tokenized_texts = [text.split() for text in texts]
+        bm25 = BM25Okapi(tokenized_texts)
+        bm25_query_tokens = query_text.split()
+        bm25_scores = np.array(bm25.get_scores(bm25_query_tokens))
 
-        reranked_docs, scores = _rerank(query_text, sem)
+        # Normalize BM25 scores to [0, 1]
+        if bm25_scores.max() > bm25_scores.min():
+            bm25_scores = (bm25_scores - bm25_scores.min()) / (
+                bm25_scores.max() - bm25_scores.min()
+            )
+        else:
+            bm25_scores = np.zeros_like(bm25_scores)
+
+        # Combine scores using weighted sum
+        w1, w2 = weights
+        hybrid_scores = w1 * cos_sim_scores + w2 * bm25_scores
+
+        # Get top-k documents
+        top_indices = hybrid_scores.argsort()[-config.TOP_K :][::-1]
+        sem = [all_docs[i] for i in top_indices]
+        top_scores = hybrid_scores[top_indices]
 
         # 출력 디렉토리 생성 확인
         output_dir = Path(config.OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
-            json.dump([float(s) for s in scores], f, ensure_ascii=False)
-        return reranked_docs
+            json.dump(top_scores.tolist(), f, ensure_ascii=False)
+
+        # Apply reranking if enabled
+        if config.RERANK:
+            print("🔄 Applying reranking...")
+            try:
+                reranked_docs, scores = _rerank(query_text, sem)
+                print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+                print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+                return reranked_docs
+            except Exception as rerank_error:
+                print(f"   ❌ Reranking failed: {rerank_error}")
+                print(f"   Falling back to original results")
+                return sem
+        else:
+            print("⏭️ Skipping reranking (disabled)")
+
+        return sem
 
     except Exception as e:
         print(f"Error in vectordb_hybrid_retrieve: {e}")
@@ -504,10 +598,20 @@ def summary_retrieve(query: HumanMessage | str) -> Tuple[List[Document], str]:
     with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
         json.dump(cos_sim.tolist(), f, ensure_ascii=False)
 
-    # 조건부로 reranking 적용
+    # Apply reranking if enabled
     if config.RERANK:
-        reranked_docs, scores = _rerank(query_text, sem)
-        return reranked_docs, query_explanation
+        print("🔄 Applying reranking...")
+        try:
+            reranked_docs, scores = _rerank(query_text, sem)
+            print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+            print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+            return reranked_docs, query_explanation
+        except Exception as rerank_error:
+            print(f"   ❌ Reranking failed: {rerank_error}")
+            print(f"   Falling back to original results")
+            return sem, query_explanation
+    else:
+        print("⏭️ Skipping reranking (disabled)")
 
     return sem, query_explanation
 
@@ -527,24 +631,60 @@ def summary_hybrid_retrieve(
     # LLM으로 질문 설명 생성
     query_explanation = utils.generate_summary(query_text)
 
-    # 하이브리드 검색 설정
-    faiss_retriever = vectordb.as_retriever(search_kwargs={"k": config.TOP_K})
+    all_docs: List[Document] = list(vectordb.docstore._dict.values())
+    texts: List[str] = [doc.page_content for doc in all_docs]
 
-    all_docs = list(vectordb.docstore._dict.values())
-    bm25_retriever = BM25Retriever.from_documents(all_docs)
-    bm25_retriever.k = config.TOP_K
-
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=[faiss_retriever, bm25_retriever],
-        weights=weights,
+    # Step 5: FAISS 기반 코사인 유사도 계산
+    doc_vecs = model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)
+    query_vec = model.encode(
+        query_explanation, convert_to_tensor=True, normalize_embeddings=True
     )
 
-    sem = ensemble_retriever.get_relevant_documents(query_explanation)
+    cos_sim_scores = util.cos_sim(query_vec, doc_vecs)[0].cpu().numpy()
 
-    reranked_docs, scores = _rerank(query_explanation, sem)
+    # Step 6: BM25 점수 계산
+    tokenized_texts = [text.split() for text in texts]
+    bm25 = BM25Okapi(tokenized_texts)
+    bm25_query = query_explanation.split()
+    bm25_scores = np.array(bm25.get_scores(bm25_query))
+
+    # Step 7: BM25 점수 정규화
+    if bm25_scores.max() > bm25_scores.min():
+        bm25_scores = (bm25_scores - bm25_scores.min()) / (
+            bm25_scores.max() - bm25_scores.min()
+        )
+
+    # Step 8: 가중합 스코어 계산
+    w1, w2 = weights
+    hybrid_scores = w1 * cos_sim_scores + w2 * bm25_scores
+
+    # Step 9: 정렬 및 결과 문서 추출
+    top_k = config.TOP_K
+    top_indices = hybrid_scores.argsort()[-top_k:][::-1]
+    top_docs = [all_docs[i] for i in top_indices]
+    top_scores = hybrid_scores[top_indices]
+
+    # Step 10: 저장 및 반환
+    Path(config.SCORE_PATH).parent.mkdir(parents=True, exist_ok=True)
     with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
-        json.dump([float(s) for s in scores], f, ensure_ascii=False)
-    return reranked_docs, query_explanation
+        json.dump(top_scores.tolist(), f, ensure_ascii=False)
+
+    # Apply reranking if enabled
+    if config.RERANK:
+        print("🔄 Applying reranking...")
+        try:
+            reranked_docs, scores = _rerank(query_text, top_docs)
+            print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+            print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+            return reranked_docs, query_explanation
+        except Exception as rerank_error:
+            print(f"   ❌ Reranking failed: {rerank_error}")
+            print(f"   Falling back to original results")
+            return top_docs, query_explanation
+    else:
+        print("⏭️ Skipping reranking (disabled)")
+
+    return top_docs, query_explanation
 
 
 def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
@@ -606,9 +746,20 @@ def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
         with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
             json.dump(sem_hyde_cos_sim.tolist(), f, ensure_ascii=False)
 
+        # Apply reranking if enabled
         if config.RERANK:
-            reranked_docs, scores = _rerank(query_text, sem)
-            return reranked_docs, hypo_docs
+            print("🔄 Applying reranking...")
+            try:
+                reranked_docs, scores = _rerank(query_text, sem)
+                print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+                print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+                return reranked_docs, hypo_docs
+            except Exception as rerank_error:
+                print(f"   ❌ Reranking failed: {rerank_error}")
+                print(f"   Falling back to original results")
+                return sem, hypo_docs
+        else:
+            print("⏭️ Skipping reranking (disabled)")
 
         return sem, hypo_docs
 
@@ -618,7 +769,7 @@ def hyde_retrieve(query: str) -> Tuple[List[Document], List[str]]:
 
 
 def hyde_hybrid_retrieve(
-    query: HumanMessage | str, weights: List[float] = [0.5, 0.5]
+    query: HumanMessage | str, weights: List[float]
 ) -> Tuple[List[Document], str]:
     """HyDE + 하이브리드 검색"""
     query_text = query.content if hasattr(query, "content") else query
@@ -628,11 +779,13 @@ def hyde_hybrid_retrieve(
         embeddings=embeddings,
         allow_dangerous_deserialization=True,
     )
+    all_docs: List[Document] = list(vectordb.docstore._dict.values())
+    texts: List[str] = [doc.page_content for doc in all_docs]
 
+    # HyDE 문서 생성
     hydes: List[np.ndarray] = []
     hypo_docs: List[str] = []
 
-    # HyDE 문서 생성
     for _ in range(5):
         hypo_doc = utils.generate_hyde_document(query_text)
         hypo_docs.append(hypo_doc)
@@ -650,38 +803,64 @@ def hyde_hybrid_retrieve(
     if norm > 0:
         mean_hyde /= norm
 
-    # 하이브리드 검색 설정
-    faiss_retriever = vectordb.as_retriever(search_kwargs={"k": config.TOP_K})
+    doc_vecs = model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)
 
-    all_docs = list(vectordb.docstore._dict.values())
-    bm25_retriever = BM25Retriever.from_documents(all_docs)
-    bm25_retriever.k = config.TOP_K
+    cos_sim_scores = util.cos_sim(mean_hyde, doc_vecs)[0].cpu().numpy()  # (N,)
 
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=[faiss_retriever, bm25_retriever],
-        weights=weights,
-    )
+    # BM25
+    tokenized_texts = [text.split() for text in texts]
+    bm25 = BM25Okapi(tokenized_texts)
 
-    # 가설 문서로 검색
-    combined_hypo_doc = " ".join(hypo_docs)
-    sem = ensemble_retriever.get_relevant_documents(combined_hypo_doc)
+    bm25_query = hypo_docs[0] if hypo_docs else query_text
+    bm25_query_tokens = bm25_query.split()
+    bm25_raw_scores = np.array(bm25.get_scores(bm25_query_tokens))
 
-    # reranking
-    reranked_docs, scores = _rerank(query_text, sem)
+    if bm25_raw_scores.max() > bm25_raw_scores.min():
+        bm25_scores = (bm25_raw_scores - bm25_raw_scores.min()) / (
+            bm25_raw_scores.max() - bm25_raw_scores.min()
+        )
+    else:
+        bm25_scores = np.zeros_like(bm25_raw_scores)
+
+    w1, w2 = weights
+    hybrid_scores = w1 * cos_sim_scores + w2 * bm25_scores
+
+    top_k = config.TOP_K
+    top_indices = hybrid_scores.argsort()[-top_k:][::-1]
+    top_docs = [all_docs[i] for i in top_indices]
+    top_scores = hybrid_scores[top_indices]
+
+    Path(config.SCORE_PATH).parent.mkdir(parents=True, exist_ok=True)
     with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
-        json.dump([float(s) for s in scores], f, ensure_ascii=False)
+        json.dump([float(s) for s in top_scores], f, ensure_ascii=False)
 
-    return reranked_docs, hypo_docs
+    # Apply reranking if enabled
+    if config.RERANK:
+        print("🔄 Applying reranking...")
+        try:
+            reranked_docs, scores = _rerank(query_text, top_docs)
+            print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+            print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+            return reranked_docs, hypo_docs
+        except Exception as rerank_error:
+            print(f"   ❌ Reranking failed: {rerank_error}")
+            print(f"   Falling back to original results")
+            return top_docs, hypo_docs
+    else:
+        print("⏭️ Skipping reranking (disabled)")
+
+    return top_docs, hypo_docs
 
 
-def parent_retrieve(query: HumanMessage | str) -> Tuple[List[Document], List[dict]]:
-    """Parent-child retrieval with content and examples databases"""
-    print(f"🔍 Starting parent_retrieve with query: {query}")
+def query_expansion_retrieve(
+    query: HumanMessage | str,
+) -> Tuple[List[Document], List[dict]]:
+    print(f"🔍 Starting query_expansion_retrieve with query: {query}")
 
     try:
         # Step 1: Query text extraction
         query_text = query.content if hasattr(query, "content") else query
-        print(f"   Query text: '{query_text}'")
+        print(f"Query text: '{query_text}'")
 
         # Step 2: Load vector databases
         print("📂 Loading vector databases...")
@@ -727,6 +906,26 @@ def parent_retrieve(query: HumanMessage | str) -> Tuple[List[Document], List[dic
                     query_emb /= norm
             else:
                 print("   Warning: No HyDE documents generated, using original query")
+                query_emb = model.encode(query_text, normalize_embeddings=True)
+        elif config.RETRIEVAL_TYPE == "summary_mean":
+            # Generate 5 summaries and use their average embedding
+            summaries = []
+            for _ in range(5):
+                try:
+                    summary_text = utils.generate_summary(query_text)
+                    embedding = model.encode(summary_text, normalize_embeddings=True)
+                    summaries.append(embedding)
+                except Exception as e:
+                    print(f"   Warning: Error generating summary: {e}")
+                    continue
+
+            if summaries:
+                query_emb = np.mean(np.stack(summaries, axis=0), axis=0)
+                norm = np.linalg.norm(query_emb)
+                if norm > 0:
+                    query_emb /= norm
+            else:
+                print("   Warning: No summaries generated, using original query")
                 query_emb = model.encode(query_text, normalize_embeddings=True)
         else:
             query_emb = model.encode(query_text, normalize_embeddings=True)
@@ -844,25 +1043,40 @@ def parent_retrieve(query: HumanMessage | str) -> Tuple[List[Document], List[dic
             json.dump(summary_expanded_query_cos_sim.tolist(), f, ensure_ascii=False)
 
         print("   ✅ All similarity scores saved")
-        print("✅ parent_retrieve completed successfully")
 
+        # Step 10: Apply reranking if enabled
+        if config.RERANK:
+            print("🔄 Applying reranking...")
+            try:
+                reranked_docs, scores = _rerank(query_text, sem)
+                print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+                print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+                return reranked_docs, parent_docs
+            except Exception as rerank_error:
+                print(f"   ❌ Reranking failed: {rerank_error}")
+                print(f"   Falling back to original results")
+                return sem, parent_docs
+        else:
+            print("⏭️ Skipping reranking (disabled)")
+
+        print("✅ query_expansion_retrieve completed successfully")
         return sem, parent_docs
 
     except Exception as e:
-        print(f"❌ Error in parent_retrieve: {e}")
+        print(f"❌ Error in query_expansion_retrieve: {e}")
         import traceback
 
         traceback.print_exc()
         return [], []
 
 
-def parent_retrieve_hybrid(
+def query_expansion_retrieve_hybrid(
     query: HumanMessage | str,
     weights: List[float] = [0.5, 0.5],
     weights_examples: List[float] = [0.5, 0.5],
 ) -> Tuple[List[Document], List[dict]]:
-    """Parent-child hybrid retrieval with BM25 + vector similarity"""
-    print(f"🔍 Starting parent_retrieve_hybrid with query: {query}")
+    """Query expansion hybrid retrieval with weighted sum approach"""
+    print(f"🔍 Starting query_expansion_retrieve_hybrid with query: {query}")
 
     try:
         # Step 1: Query text extraction
@@ -889,9 +1103,9 @@ def parent_retrieve_hybrid(
 
         if config.RETRIEVAL_TYPE == "summary":
             query_explanation = utils.generate_summary(query_text)
+            query_emb = model.encode(query_explanation, normalize_embeddings=True)
             search_query = query_explanation
         elif config.RETRIEVAL_TYPE == "hyde":
-            # For hybrid, we'll use the original query for BM25 and HyDE embedding for vector search
             hydes = []
             for _ in range(5):
                 try:
@@ -910,40 +1124,69 @@ def parent_retrieve_hybrid(
             else:
                 print("   Warning: No HyDE documents generated, using original query")
                 query_emb = model.encode(query_text, normalize_embeddings=True)
-            search_query = query_text  # Use original query for BM25
+            search_query = query_text
+        elif config.RETRIEVAL_TYPE == "summary_mean":
+            summaries = []
+            for _ in range(5):
+                try:
+                    summary_text = utils.generate_summary(query_text)
+                    embedding = model.encode(summary_text, normalize_embeddings=True)
+                    summaries.append(embedding)
+                except Exception as e:
+                    print(f"   Warning: Error generating summary: {e}")
+                    continue
+
+            if summaries:
+                query_emb = np.mean(np.stack(summaries, axis=0), axis=0)
+                norm = np.linalg.norm(query_emb)
+                if norm > 0:
+                    query_emb /= norm
+            else:
+                print("   Warning: No summaries generated, using original query")
+                query_emb = model.encode(query_text, normalize_embeddings=True)
+            search_query = query_text
         else:
             query_emb = model.encode(query_text, normalize_embeddings=True)
             search_query = query_text
 
         print(f"   ✅ Query embedding generated")
 
-        # Step 4: Hybrid retrieval from content database
-        print("🔍 Performing hybrid retrieval from content database...")
-
-        # Vector similarity search
-        content_vector_docs = content_vectordb.similarity_search_by_vector(
-            query_emb, k=config.TOP_K * 2
-        )
-
-        # BM25 search
+        # Step 4: Weighted sum hybrid retrieval from content database
+        print("🔍 Performing weighted sum hybrid retrieval from content database...")
         all_content_docs = list(content_vectordb.docstore._dict.values())
-        content_bm25_retriever = BM25Retriever.from_documents(all_content_docs)
-        content_bm25_retriever.k = config.TOP_K * 2
-        content_bm25_docs = content_bm25_retriever.get_relevant_documents(search_query)
+        content_texts = [doc.page_content for doc in all_content_docs]
 
-        # Combine using ensemble retriever
-        content_faiss_retriever = content_vectordb.as_retriever(
-            search_kwargs={"k": config.TOP_K * 2}
+        # Vector similarity scores
+        content_doc_vecs = model.encode(
+            content_texts, convert_to_tensor=True, normalize_embeddings=True
         )
-        content_ensemble_retriever = EnsembleRetriever(
-            retrievers=[content_faiss_retriever, content_bm25_retriever],
-            weights=weights,
+        content_cos_sim_scores = (
+            util.cos_sim(query_emb, content_doc_vecs)[0].cpu().numpy()
         )
 
-        sem = content_ensemble_retriever.get_relevant_documents(search_query)[
-            : config.TOP_K
-        ]
-        print(f"   ✅ Retrieved {len(sem)} content documents via hybrid search")
+        # BM25 scores
+        content_tokenized_texts = [text.split() for text in content_texts]
+        content_bm25 = BM25Okapi(content_tokenized_texts)
+        content_bm25_scores = np.array(content_bm25.get_scores(search_query.split()))
+
+        # Normalize BM25 scores
+        if content_bm25_scores.max() > content_bm25_scores.min():
+            content_bm25_scores = (content_bm25_scores - content_bm25_scores.min()) / (
+                content_bm25_scores.max() - content_bm25_scores.min()
+            )
+        else:
+            content_bm25_scores = np.zeros_like(content_bm25_scores)
+
+        # Combine scores
+        w1, w2 = weights
+        content_hybrid_scores = w1 * content_cos_sim_scores + w2 * content_bm25_scores
+
+        # Get top-k content documents
+        content_top_indices = content_hybrid_scores.argsort()[-config.TOP_K :][::-1]
+        sem = [all_content_docs[i] for i in content_top_indices]
+        print(
+            f"   ✅ Retrieved {len(sem)} content documents via weighted sum hybrid search"
+        )
 
         # Step 5: Create expanded query with content
         print("📝 Creating expanded query with content...")
@@ -957,35 +1200,46 @@ def parent_retrieve_hybrid(
         )
         print(f"   ✅ Expanded query embedding generated")
 
-        # Step 6: Hybrid retrieval from summary/examples database
-        print("🔍 Performing hybrid retrieval from summary/examples database...")
-
-        # Vector similarity search
-        summary_vector_docs = summary_vectordb.similarity_search_by_vector(
-            query_with_content_embed, k=config.TOP_K * 2
+        # Step 6: Weighted sum hybrid retrieval from summary/examples database
+        print(
+            "🔍 Performing weighted sum hybrid retrieval from summary/examples database..."
         )
-
-        # BM25 search
         all_summary_docs = list(summary_vectordb.docstore._dict.values())
-        summary_bm25_retriever = BM25Retriever.from_documents(all_summary_docs)
-        summary_bm25_retriever.k = config.TOP_K * 2
-        summary_bm25_docs = summary_bm25_retriever.get_relevant_documents(
-            query_with_content
+        summary_texts = [doc.page_content for doc in all_summary_docs]
+
+        # Vector similarity scores
+        summary_doc_vecs = model.encode(
+            summary_texts, convert_to_tensor=True, normalize_embeddings=True
+        )
+        summary_cos_sim_scores = (
+            util.cos_sim(query_with_content_embed, summary_doc_vecs)[0].cpu().numpy()
         )
 
-        # Combine using ensemble retriever
-        summary_faiss_retriever = summary_vectordb.as_retriever(
-            search_kwargs={"k": config.TOP_K * 2}
-        )
-        summary_ensemble_retriever = EnsembleRetriever(
-            retrievers=[summary_faiss_retriever, summary_bm25_retriever],
-            weights=weights_examples,
+        # BM25 scores
+        summary_tokenized_texts = [text.split() for text in summary_texts]
+        summary_bm25 = BM25Okapi(summary_tokenized_texts)
+        summary_bm25_scores = np.array(
+            summary_bm25.get_scores(query_with_content.split())
         )
 
-        summary_sem = summary_ensemble_retriever.get_relevant_documents(
-            query_with_content
-        )[: config.TOP_K]
-        print(f"   ✅ Retrieved {len(summary_sem)} summary documents via hybrid search")
+        # Normalize BM25 scores
+        if summary_bm25_scores.max() > summary_bm25_scores.min():
+            summary_bm25_scores = (summary_bm25_scores - summary_bm25_scores.min()) / (
+                summary_bm25_scores.max() - summary_bm25_scores.min()
+            )
+        else:
+            summary_bm25_scores = np.zeros_like(summary_bm25_scores)
+
+        # Combine scores
+        w3, w4 = weights_examples
+        summary_hybrid_scores = w3 * summary_cos_sim_scores + w4 * summary_bm25_scores
+
+        # Get top-k summary documents
+        summary_top_indices = summary_hybrid_scores.argsort()[-config.TOP_K :][::-1]
+        summary_sem = [all_summary_docs[i] for i in summary_top_indices]
+        print(
+            f"   ✅ Retrieved {len(summary_sem)} summary documents via weighted sum hybrid search"
+        )
 
         # Step 7: Load parent documents
         print("📂 Loading parent documents...")
@@ -1018,68 +1272,84 @@ def parent_retrieve_hybrid(
 
             print(f"   ✅ Loaded {len(parent_docs)} parent documents")
 
-        # Step 8: Calculate similarity scores (for consistency with parent_retrieve)
-        print("📊 Calculating similarity scores...")
-
-        # Content document embeddings
-        content_doc_vecs = model.encode(
-            [d.page_content for d in sem],
-            convert_to_tensor=False,
-            normalize_embeddings=True,
-        )
-
-        # Summary document embeddings
-        summary_doc_vecs = model.encode(
-            [d.page_content for d in summary_sem],
-            convert_to_tensor=False,
-            normalize_embeddings=True,
-        )
-
-        # Calculate cosine similarities
-        content_query_cos_sim = (
-            util.cos_sim(query_emb, content_doc_vecs)[0].float().cpu().numpy()
-        )
-        summary_query_cos_sim = (
-            util.cos_sim(query_emb, summary_doc_vecs)[0].float().cpu().numpy()
-        )
-        summary_expanded_query_cos_sim = (
-            util.cos_sim(query_with_content_embed, summary_doc_vecs)[0]
-            .float()
-            .cpu()
-            .numpy()
-        )
-
-        print(f"   ✅ Similarity scores calculated")
-
-        # Step 9: Save similarity scores
+        # Step 8: Save similarity scores
         print("💾 Saving similarity scores...")
         output_dir = Path(config.OUTPUT_DIR)
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        content_selected_scores = content_hybrid_scores[content_top_indices]
+        summary_selected_scores = summary_hybrid_scores[summary_top_indices]
+
         with open(
             output_dir / "content_query_similarity_score.json", "w", encoding="utf-8"
         ) as f:
-            json.dump(content_query_cos_sim.tolist(), f, ensure_ascii=False)
+            json.dump(content_selected_scores.tolist(), f, ensure_ascii=False)
 
         with open(
             output_dir / "summary_query_similarity_score.json", "w", encoding="utf-8"
         ) as f:
-            json.dump(summary_query_cos_sim.tolist(), f, ensure_ascii=False)
-
-        with open(
-            output_dir / "content_expanded_query_similarity_score.json",
-            "w",
-            encoding="utf-8",
-        ) as f:
-            json.dump(summary_expanded_query_cos_sim.tolist(), f, ensure_ascii=False)
+            json.dump(summary_selected_scores.tolist(), f, ensure_ascii=False)
 
         print("   ✅ All similarity scores saved")
-        print("✅ parent_retrieve_hybrid completed successfully")
 
+        # Step 9: Apply reranking if enabled
+        if config.RERANK:
+            print("🔄 Applying reranking...")
+            try:
+                reranked_docs, scores = _rerank(query_text, sem)
+                print(f"   ✅ Reranking completed: {len(reranked_docs)} documents")
+                print(f"   Rerank scores: {scores[:3] if len(scores) >= 3 else scores}")
+                return reranked_docs, parent_docs
+            except Exception as rerank_error:
+                print(f"   ❌ Reranking failed: {rerank_error}")
+                print(f"   Falling back to original results")
+                return sem, parent_docs
+        else:
+            print("⏭️ Skipping reranking (disabled)")
+
+        print("✅ query_expansion_retrieve_hybrid completed successfully")
         return sem, parent_docs
 
     except Exception as e:
-        print(f"❌ Error in parent_retrieve_hybrid: {e}")
+        print(f"❌ Error in query_expansion_retrieve_hybrid: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return [], []
+        # Step 8: Get top-k documents
+        print(f"🔝 Selecting top-{config.TOP_K} documents...")
+        top_indices = hybrid_scores.argsort()[-config.TOP_K :][::-1]
+        top_docs = [all_docs[i] for i in top_indices]
+        top_scores = hybrid_scores[top_indices]
+        print(f"   ✅ Selected {len(top_docs)} documents")
+
+        # Step 9: Save scores
+        print("💾 Saving similarity scores...")
+        output_dir = Path(config.OUTPUT_DIR)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(config.SCORE_PATH, "w", encoding="utf-8") as f:
+            json.dump(top_scores.tolist(), f, ensure_ascii=False)
+        print(f"   ✅ Scores saved to: {config.SCORE_PATH}")
+
+        # Step 10: Apply reranking if enabled
+        if config.RERANK:
+            print("🔄 Applying reranking...")
+            try:
+                reranked_docs, rerank_scores = _rerank(query_text, top_docs)
+                print(f"   ✅ Reranking completed")
+                return reranked_docs, summary_texts
+            except Exception as rerank_error:
+                print(f"   ❌ Reranking failed: {rerank_error}")
+                return top_docs, summary_texts
+        else:
+            print("⏭️ Skipping reranking (disabled)")
+
+        print("✅ summary_mean_retrieve_hybrid completed successfully")
+        return top_docs, summary_texts
+
+    except Exception as e:
+        print(f"❌ Error in summary_mean_retrieve_hybrid: {e}")
         import traceback
 
         traceback.print_exc()

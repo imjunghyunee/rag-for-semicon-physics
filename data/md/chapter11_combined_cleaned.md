@@ -914,11 +914,11 @@ However, the drain current will begin to increase rapidly before the actual punc
 
 Condition has been reached. Figure 11.26 shows some typical characteristics of a short-channel device with a near punch-through condition.
 
+## **EXAMPLE 11.5**
+
 **Objective**
 
 Calculate the theoretical punch-through voltage assuming the abrupt junction approximation.
-
-**EXAMPLE 11.5**
 
 Consider an n-channel MOSFET with source and drain doping concentrations of \( N_d = 10^{19} \, \text{cm}^{-3} \) and a channel region doping of \( N_a = 10^{16} \, \text{cm}^{-3} \). Assume a channel length of \( L = 1.2 \, \mu\text{m} \), and assume the source and body are at ground potential.
 
@@ -958,9 +958,6 @@ V_{bi} + V_{DS} = \frac{x_j^2 e N_a}{2 \varepsilon_s} = \frac{(0.864 \times 10^{
 = 5.77 \, \text{V}
 \]
 
-```markdown
-# CHAPTER 11 Metal–Oxide–Semiconductor Field-Effect Transistor: Additional Concepts
-
 The punch-through voltage is then found as
 
 \[
@@ -976,14 +973,13 @@ As the two space charge regions approach punch-through, the abrupt junction appr
 
 For a doping of \( 10^{16} \, \text{cm}^{-3} \), the two space charge regions will begin to interact when the abrupt depletion layers are approximately 0.25 μm apart. The drain voltage at which this near punch-through condition, also known as drain-induced barrier lowering, occurs is significantly less than the ideal punch-through voltage such as calculated in Example 11.5 (see Problem 11.33).
 
-## *11.4.2 The Lightly Doped Drain Transistor
+### *11.4.2 The Lightly Doped Drain Transistor
 
 The junction breakdown voltage is a function of the maximum electric field. As the channel length becomes smaller, the bias voltages may not be scaled down accordingly, so the junction electric fields become larger. As the electric field increases, near avalanche breakdown and near punch-through effects become more serious. In addition, as device geometries are scaled down, the parasitic bipolar device becomes more dominant and breakdown effects are enhanced.
 
 One approach that reduces these breakdown effects is to alter the doping profile of the drain contact. The Lightly Doped Drain (LDD) design and doping profiles are shown in Figure 11.27a, the conventional MOSFET and doping profiles are shown in Figure 11.27b for comparison. By introducing the lightly doped region, the peak electric field in the space charge region is reduced and the breakdown effects are minimized. The peak electric field at the drain junction is a function of the semiconductor doping as well as the curvature of the n+ drain region. Figure 11.28 shows the physical geometries of a conventional n+ drain contact and an LDD structure superimposed on the same plot. The magnitude of the electric field at the oxide–semiconductor interface in the LDD structure is less than in the conventional structure. The electric field in the conventional device peaks approximately at the metallurgical junction and drops quickly to zero in the drain because no field can exist in the highly conductive n+ region. On the other hand, the electric field in the LDD device extends across the n-region before dropping to zero at the drain. This effect minimizes breakdown and the hot electron effects, which we discuss in Section 11.5.3.
 
 Two disadvantages of the LDD device are an increase in both fabrication complexity and drain resistance. The added processing steps, however, produce a device with significant improvements in performance. The cross section of the LDD device
-```
 
 ## 11.4 Additional Electrical Characteristics
 
@@ -991,8 +987,6 @@ Two disadvantages of the LDD device are an increase in both fabrication complexi
 
 **Figure 11.27** (a) The lightly doped drain (LDD) structure. (b) Conventional structure.  
 *(From Ogura et al. [12])*
-
-### Graphs
 
 - **Section A-A**  
   - **Distance (μm):** 0.1 to 0.9
@@ -1004,13 +998,10 @@ Two disadvantages of the LDD device are an increase in both fabrication complexi
   - **log \([N_D \times N_A]\):** 15 to 20
   - **Regions:** n\(^+\), p
 
-### Figure 11.28
-
+Figure 11.28
 **Magnitude of the electric field at the Si-SiO\(_2\) interface as a function of distance; \(V_{GS} = 10 \, V\).**  
 - **\(V_{SB} = 2 \, V\), \(V_{DS} = V_T\).**  
 *(From Ogura et al. [12])*
-
-#### Graph
 
 - **Position along surface (μm):** 0.1 to 0.8
 - **x-component of E (10\(^5\) V/cm):** 1 to 5
@@ -1050,9 +1041,6 @@ If donor atoms were implanted into the p-type substrate, the space charge densit
 |       |       | \( N_a \)             |
 | \( x = 0 \) | \( x = x_i, x = x_{dT} \) | |
 
-
-## 11.4 Additional Electrical Characteristics
-
 A second type of implant approximation is the step junction, shown in Figure 11.29b. If the induced space charge width at the threshold inversion point is less than \( x_t \), then the threshold voltage is determined on the basis of a semiconductor with a uniform doping concentration of \( N_t \) atoms per cm\(^3\). On the other hand, if the induced space charge width is greater than \( x_t \) at the threshold inversion point, then a new expression for \( x_{dT} \) must be derived. We can apply Poisson’s equation and show that the maximum induced space charge width after the step implant is
 
 \[
@@ -1087,10 +1075,8 @@ V_{T0} = V_{FB0} + 2 \phi_{fp0} + \frac{e N_a x_{dT0}}{C_{ox}}
 
 where the subscript 0 indicates the preimplant values.
 
-
+## **Example 11.6**
 **Objective:** Design the ion implant dose required to adjust the threshold voltage to a specified value.
-
-**Example 11.6**
 
 Consider an n-channel silicon MOSFET with a doping of \( N_a = 5 \times 10^{15} \) cm\(^{-3}\), an oxide thickness of \( t_{ox} = 180 \) Å, and an initial flat-band voltage of \( V_{FB0} = -1.25 \) V. Determine the ion implantation dose such that a threshold voltage of \( V_T = +0.4 \) V is obtained.
 
@@ -1129,9 +1115,6 @@ V_{T0} = V_{FB0} + 2 \phi_{fp0} + \frac{e N_a x_{dT0}}{C_{ox}}
 \[
 = -0.419 \, \text{V}
 \]
-
-```markdown
-# CHAPTER 11 Metal–Oxide–Semiconductor Field-Effect Transistor: Additional Concepts
 
 The threshold voltage after implant, from Equation (11.43), is
 
@@ -1183,11 +1166,9 @@ The actual implant dose versus distance is neither a delta function nor a step f
 
 **TYU 11.4** Repeat Exercise Problem Ex 11.6 for a final threshold voltage of  
 (a) \( V_T = +0.25 \, \text{V} \) and (b) \( V_T = -0.25 \, \text{V} \).
-```
 
-## 11.5 Radiation and Hot-Electron Effects
 
-### 11.5.1 Radiation and Hot-Electron Effects
+## 11.5 | Radiation and Hot-Electron Effects
 
 We have considered the effects of fixed trapped oxide charge and interface state charge on the capacitance–voltage characteristics of MOS capacitors and on the MOSFET characteristics. These charges can exist because the oxide is essentially a perfect dielectric and a net charge density can exist in a dielectric material. Two processes that generate these charges are ionizing radiation and impact ionization in the drain region of a MOSFET operating near avalanche breakdown.
 
@@ -1217,9 +1198,6 @@ Figure 11.30 shows the energy-band diagram of an MOS device with a p-type substr
 - **E_V**
 - **1.1 eV**
 
-```markdown
-# CHAPTER 11 Metal–Oxide–Semiconductor Field-Effect Transistor: Additional Concepts
-
 approximately 9 eV. The figure schematically shows the creation of an electron–hole pair in the oxide by ionizing radiation. The force on the radiation-induced electron is toward the gate and the force on the radiation-induced hole is toward the semiconductor. It has been found that generated electrons in the oxide are fairly mobile, with a mobility value on the order of 20 cm\(^2\)/V·s. At high electric fields, the electron velocity in the oxide also saturates at approximately 10\(^7\) cm/s, so that the electron transit time for typical gate oxide thicknesses is on the order of a few picoseconds. For positive gate voltages, the vast majority of radiation-induced electrons flow out through the gate terminal; for this reason, in general these electrons do not play a significant role in the radiation response of MOS devices.
 
 The generated holes, on the other hand, undergo a stochastic hopping transport process through the oxide (shown schematically in Figure 11.30). The hole transport process is dispersive in time and is a function of the electric field, temperature, and oxide thickness. The effective hole mobility in silicon dioxide is typically in the range of 10\(^-4\) to 10\(^-11\) cm\(^2\)/V·s; thus, holes are relatively immobile when compared with electrons.
@@ -1229,8 +1207,6 @@ When holes reach the silicon–silicon dioxide (Si–SiO\(_2\)) interface, a fra
 The measured areal hole trap densities are in the range of 10\(^12\) to 10\(^13\) cm\(^-2\) depending upon oxide and device processing. In general, these traps are located within approximately 50 Å of the Si–SiO\(_2\) interface. The hole trap is usually associated with a trivalent silicon defect that has an oxygen vacancy in the SiO\(_2\) structure. The oxygen vacancies are located in a silicon-rich region near the Si–SiO\(_2\) interface.
 
 Since the threshold or flat-band voltage shift is a function of the amount of trapped charge, the voltage shift is a function of applied voltage across the oxide. Figure 11.31 shows the flat-band voltage shift of an MOS capacitor as a function of gate voltage applied during irradiation. For small values of gate voltage, some radiation-generated
-
-!Graph of Radiation-induced flat-band voltage shift
 
 **Figure 11.31** | Radiation-induced flat-band voltage shift in an MOS capacitor as a function of applied gate bias during irradiation.  
 ---|---  
@@ -1248,12 +1224,10 @@ Since the threshold or flat-band voltage shift is a function of the amount of tr
 | 0                | 0.0                           |
 | +5               | 0.5                           |
 | +10              | 1.5                           |
-```
-
-## 11.5 Radiation and Hot-Electron Effects
 
 holes and electrons recombine in the oxide. Hence, the amount of charge reaching the Si–SiO₂ interface and being trapped is less than for a large positive gate voltage, where essentially all radiation-generated holes reach the interface without recombining with electrons. If the fraction of generated holes that become trapped is relatively constant, then the voltage shift becomes independent of positive gate bias, as shown in the figure. For negative applied gate voltages, the radiation-induced holes move toward the gate terminal. There can be positive charge trapping in the oxide near the gate, but the effect of this trapped charge on the threshold voltage is small.
 
+## Exercise 11.7
 **Objective**
 
 **Calculate the threshold voltage shift due to radiation-induced oxide charge trapping.**
@@ -1313,14 +1287,8 @@ In our discussion of subthreshold conduction, we have mentioned that the slope o
 **Figure 11.33** | Subthreshold current versus gate voltage of a MOSFET prior to irradiation and at four total radiation dose levels.  
 *(From Ma and Dressendorfer [71].)*
 
-### Figures
-
 - **Figure 11.32**: Threshold voltage versus total ionizing radiation dose for n-channel and p-channel MOSFETs.
 - **Figure 11.33**: Subthreshold current versus gate voltage of a MOSFET at various radiation dose levels.
-
-## 11.5 Radiation and Hot-Electron Effects
-
-!Radiation-induced interface state density
 
 **Figure 11.34** | Radiation-induced interface state density versus time after a pulse of ionizing radiation for several values of oxide electric field.  
 (From Ma and Dressendorfer [71].)
@@ -1430,9 +1398,3 @@ After studying this chapter, the reader should have the ability to:
 8. Sketch \( I_D \) versus \( V_D \) for an NMOS device, showing the snapback breakdown effect.
 
 9. Sketch the energy bands of an NMOS device between source and drain, showing the near punch-through effect.
-
-# Problems
-
-10. Sketch the cross section of a lightly doped drain transistor. What are the advantages and disadvantages of this design?
-
-11. What type of ion should be implanted into a MOSFET to increase the threshold voltage? What type of ion should be implanted into a MOSFET to decrease the threshold voltage?

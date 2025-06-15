@@ -1,6 +1,4 @@
-# 12
-
-## The Bipolar Transistor
+# Chapter 12: The Bipolar Transistor
 
 The transistor is a multijunction semiconductor device that, in conjunction with other circuit elements, is capable of current gain, voltage gain, and signal power gain. The transistor is therefore referred to as an active device, whereas the diode is passive. The basic transistor action is the control of current at one terminal by the voltage applied across the other two terminals of the device.
 
@@ -31,45 +29,36 @@ The bipolar transistor has three separately doped regions and two pn junctions. 
 
 The block diagrams of Figure 12.1 show the basic structure of the transistor, but in very simplified sketches. Figure 12.2a shows a cross section of a classic npn bipolar transistor fabricated in an integrated circuit configuration, and Figure 12.2b shows the cross section of an npn bipolar transistor fabricated by a more modern technology. One can immediately observe that the actual structure of the bipolar transistor is not nearly as simple as the block diagrams of Figure 12.1 might suggest. A reason for the complexity is that terminal connections are made at the surface; in order to minimize semiconductor resistances, heavily doped n+ buried layers must be included. Another reason for complexity arises out of the desire to fabricate more than one bipolar transistor on a single piece of semiconductor material. Individual transistors must be isolated from each other since all collectors, for example, will not be at the same potential. This isolation is accomplished by adding p+ regions so that devices are separated by reverse-biased pn junctions as shown in Figure 12.2a, or they are isolated by large oxide regions as shown in Figure 12.2b.
 
-!Figure 12.1
-
 **Figure 12.1** | Simplified block diagrams and circuit symbols of (a) npn and (b) pnp bipolar transistors.
-```
 
-# 12.1 The Bipolar Transistor Action
-
-!Figure 12.2
+## 12.1 The Bipolar Transistor Action
 
 **Figure 12.2** | Cross section of (a) a conventional integrated circuit npn bipolar transistor and (b) an oxide-isolated npn bipolar transistor.  
 *(From Muller and Kamins [4].)*
 
 An important point to note from the devices shown in Figure 12.2 is that the bipolar transistor is not a symmetrical device. Although the transistor may contain two n regions or two p regions, the impurity doping concentrations in the emitter and collector are different and the geometry of these regions can be vastly different. The block diagrams of Figure 12.1 are highly simplified, but useful, concepts in the development of the basic transistor theory.
 
-## 12.1.1 The Basic Principle of Operation
+### 12.1.1 The Basic Principle of Operation
 
 The npn and pnp transistors are complementary devices. We develop the bipolar transistor theory using the npn transistor, but the same basic principles and equations also apply to the pnp device. Figure 12.3 shows an idealized impurity doping profile in an npn bipolar transistor for the case when each region is uniformly doped. Typical impurity doping concentrations in the emitter, base, and collector may be on the order of \(10^{19}\), \(10^{17}\), and \(10^{15}\) cm\(^{-3}\), respectively.
 
 The base–emitter (B–E) pn junction is forward biased and the base–collector (B–C) pn junction is reverse biased in the normal bias configuration as shown in Figure 12.3.
 
-!Figure 12.3
 
 **Figure 12.3** | Idealized doping profile of a uniformly doped npn bipolar transistor.
 
-# Chapter 12 The Bipolar Transistor
-
-!Bipolar Transistor Diagram
 
 **Figure 12.4** (a) Biasing of an npn bipolar transistor in the forward-active mode, (b) minority carrier distribution in an npn bipolar transistor operating in the forward-active mode, and (c) energy-band diagram of the npn bipolar transistor under zero bias and under a forward-active mode bias.
 
 Figure 12.4a. This configuration is called the **forward-active** operating mode: The B–E junction is forward biased so electrons from the emitter are injected across the B–E junction into the base. These injected electrons create an excess concentration of minority carriers in the base. The B–C junction is reverse biased, so the minority carrier electron concentration at the edge of the B–C junction is ideally zero. We expect the electron concentration in the base to be like that shown in
 
-### Diagrams
+**Diagrams**
 
 - **(a)** Circuit diagram showing biasing of an npn bipolar transistor.
 - **(b)** Graph showing minority carrier distribution in the transistor.
 - **(c)** Energy-band diagram of the npn bipolar transistor.
 
-### Key Components
+**Key Components**
 
 - **E**: Emitter
 - **B**: Base
@@ -83,37 +72,36 @@ Figure 12.4a. This configuration is called the **forward-active** operating mode
 - **\(V_{BB}\)**: Base bias voltage
 - **\(V_{CC}\)**: Collector bias voltage
 
-### Graphs
+**Graphs**
 
 - **E–B space charge region**: Shows electric field and carrier concentration.
 - **B–C space charge region**: Shows electric field and carrier concentration.
 
-### Energy-Band Diagram
+**Energy-Band Diagram**
 
 - **Zero bias**: Shows energy levels without applied voltage.
 - **Forward active**: Shows energy levels with forward-active bias.
 
-### Equations
+**Equations**
 
 - **Carrier Concentration**: \( P_{n0}(x) \), \( P_{p0}(x) \)
 - **Energy Levels**: \( E_C \), \( E_F \), \( E_V \)
 
-# 12.1 The Bipolar Transistor Action
+## 12.1 The Bipolar Transistor Action
 
-!Figure 12.5  
 **Figure 12.5** | Cross section of an npn bipolar transistor showing the injection and collection of electrons in the forward-active mode.
 
 Figure 12.4b. The large gradient in the electron concentration means that electrons injected from the emitter will diffuse across the base region into the B–C space charge region, where the electric field will sweep the electrons into the collector. We want as many electrons as possible to reach the collector without recombining with any majority carrier holes in the base. For this reason, the width of the base needs to be small compared with the minority carrier diffusion length. If the base width is small, then the minority carrier electron concentration is a function of both the B–E and B–C junction voltages. The two junctions are close enough to be called interacting pn junctions.
 
 Figure 12.5 shows a cross section of an npn transistor with the injection of electrons from the n-type emitter (hence the name emitter) and the collection of the electrons in the collector (hence the name collector).
 
-## 12.1.2 Simplified Transistor Current Relation—Qualitative Discussion
+### 12.1.2 Simplified Transistor Current Relation—Qualitative Discussion
 
 We can gain a basic understanding of the operation of the transistor and the relations between the various currents and voltages by considering a simplified analysis. After this discussion, we delve into a more detailed analysis of the physics of the bipolar transistor.
 
 The minority carrier concentrations are again shown in Figure 12.6 for an npn bipolar transistor biased in the forward-active mode. Ideally, the minority carrier electron concentration in the base is a linear function of distance, which implies no recombination. The electrons diffuse across the base and are swept into the collector by the electric field in the B–C space charge region.
 
-### Collector Current
+#### Collector Current
 
 Assuming the ideal linear electron distribution in the base, the collector current can be written as a diffusion current given by
 
@@ -124,10 +112,6 @@ i_C = eD_nA_{BE} \frac{dn(x)}{dx} \bigg|_{x=0} = eD_nA_{BE} \left[ \frac{n_{b0}(
 (12.1)
 
 where \( A_{BE} \) is the cross-sectional area of the B–E junction, \( n_{b0} \) is the thermal-equilibrium electron concentration in the base, and \( V_t \) is the thermal voltage. The
-
-# CHAPTER 12 The Bipolar Transistor
-
-!Figure 12.6
 
 **Figure 12.6** | Minority carrier distributions and basic currents in a forward-biased npn bipolar transistor.
 
@@ -141,7 +125,7 @@ i_c = I_S \exp \left( \frac{v_{BE}}{V_T} \right)
 
 The collector current is controlled by the base–emitter voltage; that is, the current at one terminal of the device is controlled by the voltage applied to the other two terminals of the device. As we have mentioned, this is the basic transistor action.
 
-### Emitter Current
+#### Emitter Current
 
 One component of emitter current, \(i_{E1}\), shown in Figure 12.6 is due to the flow of electrons injected from the emitter into the base. This current, then, is equal to the collector current given by Equation (12.1).
 
@@ -153,9 +137,6 @@ i_{E2} = I_{S2} \exp \left( \frac{v_{BE}}{V_T} \right)
 
 (12.3)
 
-### 12.1 The Bipolar Transistor Action
-
-!Figure 12.7  
 **Figure 12.7** Ideal bipolar transistor common-base current–voltage characteristics.
 
 where \( i_{E2} \) involves the minority carrier hole parameters in the emitter. The total emitter current is the sum of the two components, or
@@ -184,7 +165,6 @@ As shown in Figure 12.6, the component of emitter current \(i_{E2}\) is a B–E 
 
 There is also a second component of base current. We have considered the ideal case in which there is no recombination of minority carrier electrons with majority carrier holes in the base. However, in reality, there will be some recombination. Since majority carrier holes in the base are disappearing, they must be resupplied by a flow of positive charge into the base terminal. This flow of charge is indicated as a current \(i_{B2}\) in Figure 12.6. The number of holes per unit time recombining in the base is directly related to the number of minority carrier electrons in the base.
 
-# Chapter 12: The Bipolar Transistor
 
 [see Equation (6.13)]. Therefore, the current \(i_{BE}\) is also proportional to \(\exp(V_{BE}/V_T)\). The total base current is the sum of \(i_{BE}\) and \(i_{BC}\) and is proportional to \(\exp(V_{BE}/V_T)\).
 
@@ -198,7 +178,7 @@ The ratio of collector current to base current is a constant since both currents
 
 where \(\beta\) is called the **common-emitter current gain**. Normally, the base current will be relatively small so that, in general, the common-emitter current gain is much larger than unity (on the order of 100 or larger).
 
-## 12.1.3 The Modes of Operation
+### 12.1.3 The Modes of Operation
 
 Figure 12.8 shows the npn transistor in a simple circuit. In this configuration, the transistor may be biased in one of three modes of operation. If the B–E voltage is zero or reverse biased (\(V_{BE} \leq 0\)), then majority carrier electrons from the emitter will not be injected into the base. The B–C junction is also reverse biased; thus, the emitter and collector currents will be zero for this case. This condition is referred to as **cutoff**—all currents in the transistor are zero.
 
@@ -214,13 +194,9 @@ If \(V_{CC}\) is large enough and if \(V_R\) is small enough, then \(V_{CB} > 0\
 
 As the forward-biased B–E voltage increases, the collector current and hence \(V_R\) will also increase. The increase in \(V_R\) means that the reverse-biased C–B voltage decreases, or \(|V_{CB}|\) decreases. At some point, the collector current may become large.
 
-!Figure 12.8
 
 **Figure 12.8** | An npn bipolar transistor in a common-emitter circuit configuration.
 
-### 12.1 The Bipolar Transistor Action
-
-!Figure 12.9  
 **Figure 12.9** | Bipolar transistor common-emitter current–voltage characteristics with load line superimposed.
 
 enough that the combination of \(V_R\) and \(V_{CC}\) produces 0 V across the B–C junction. A slight increase in \(I_C\) beyond this point will cause a slight increase in \(V_R\) and the B–C junction will become forward biased (\(V_{CB} < 0\)). This condition is called **saturation**. In the saturation mode of operation, both B–E and B–C junctions are forward biased and the collector current is no longer controlled by the B–E voltage.
@@ -239,23 +215,19 @@ Equation (12.8) shows a linear relation between collector current and collector�
 
 A fourth mode of operation for the bipolar transistor is possible, although not with the circuit configuration shown in Figure 12.8. This fourth mode, known as
 
-----
 
 *The concept of “saturation” for the bipolar transistor is not the same as the principle of the “saturation region” for the MOSFET described in Chapter 10. The term “saturation” as applied to the BJT means that the output current and output voltage do not change as the base–emitter voltage changes. The term “saturation region” as applied to the MOSFET means that the output current does not change (ideally) with a change in the drain-to-source voltage.*
 
-# Chapter 12: The Bipolar Transistor
 
 **inverse active**, occurs when the B–E junction is reverse biased and the B–C junction is forward biased. In this case, the transistor is operating “upside down,” and the roles of the emitter and collector are reversed. We have argued that the transistor is not a symmetrical device; therefore, the inverse-active characteristics will not be the same as the forward-active characteristics.
 
 The junction voltage conditions for the four operating modes are shown in Figure 12.10.
 
-## 12.1.4 Amplification with Bipolar Transistors
+### 12.1.4 Amplification with Bipolar Transistors
 
 Voltages and currents can be amplified by bipolar transistors in conjunction with other elements. We demonstrate this amplification qualitatively in the following discussion. Figure 12.11 shows an npn bipolar transistor in a common-emitter configuration. The dc voltage sources, \( V_{BB} \) and \( V_{CC} \), are used to bias the transistor in the forward-active mode. The voltage source \( v_i \) represents a time-varying input voltage (such as a signal from a satellite) that needs to be amplified.
 
 Figure 12.12 shows the various voltages and currents that are generated in the circuit assuming that \( v_i \) is a sinusoidal voltage. The sinusoidal voltage \( v_i \) induces a sinusoidal component of base current superimposed on a dc quiescent value. Since \( i_C = \beta i_B \), then a relatively large sinusoidal collector current is superimposed on a dc value of collector current. The time-varying collector current induces a time-varying voltage across the \( R_C \) resistor which, by Kirchhoff’s voltage law, means that a sinusoidal voltage, superimposed on a dc value, exists between the collector and emitter of the bipolar transistor. The sinusoidal voltages in the collector–emitter portion of the circuit are larger than the signal input voltage \( v_i \), so that the circuit has produced a **voltage gain** in the time-varying signals. Hence, the circuit is known as a **voltage amplifier**.
-
-### Figures
 
 **Figure 12.10** | Junction voltage conditions for the four operating modes of a bipolar transistor.
 
@@ -280,9 +252,7 @@ Figure 12.12 shows the various voltages and currents that are generated in the c
   - \( v_{CE} \)
   - \( V_{CC} \)
 
-### 12.2 Minority Carrier Distribution
-
-!Graphs
+## 12.2 Minority Carrier Distribution
 
 **Figure 12.12** | Currents and voltages existing in the circuit shown in Figure 12.11. (a) Input sinusoidal signal voltage. (b) Sinusoidal base and collector currents superimposed on the quiescent dc values. (c) Sinusoidal voltage across the \( R_C \) resistor superimposed on the quiescent dc value.
 
@@ -292,9 +262,7 @@ In the remainder of the chapter, we consider the operation and characteristics o
 
 We are interested in calculating currents in the bipolar transistor that, as in the simple pn junction, are determined by minority carrier diffusion. Since diffusion currents are produced by minority carrier gradients, we must determine the steady-state minority carrier distribution in each of the three transistor regions. Let us first consider the forward-active mode, and then the other modes of operation. Table 12.1 summarizes the notation used in the following analysis.
 
-# CHAPTER 12 The Bipolar Transistor
-
-## Table 12.1 Notation used in the analysis of the bipolar transistor
+**Table 12.1** Notation used in the analysis of the bipolar transistor
 
 | Notation | Definition |
 |----------|------------|
@@ -313,24 +281,20 @@ We are interested in calculating currents in the bipolar transistor that, as in 
 | \( n(x'), p(x), n(x'') \) | Total minority carrier electron, hole, and electron concentrations in the emitter, base, and collector |
 | \( \delta n(x'), \delta p(x), \delta n(x'') \) | Excess minority carrier electron, hole, and electron concentrations in the emitter, base, and collector |
 
-!Figure 12.13
 
 **Figure 12.13** Geometry of the npn bipolar transistor used to calculate the minority carrier distribution.
 
-## 12.2.1 Forward-Active Mode
+### 12.2.1 Forward-Active Mode
 
 Consider a uniformly doped npn bipolar transistor with the geometry shown in Figure 12.13. When we consider the individual emitter, base, and collector regions, we shift the origin to the edge of the space charge region and consider a positive \( x, x', \) or \( x'' \) coordinate as shown in the figure.
 
 In the forward-active mode, the B–E junction is forward biased and the B–C is reverse biased. We expect the minority carrier distributions to look like those shown.
 
-# 12.2 Minority Carrier Distribution
-
-!Figure 12.14  
 **Figure 12.14** Minority carrier distribution in an npn bipolar transistor operating in the forward-active mode.
 
 In Figure 12.14, as there are two n regions, we have minority carrier holes in both emitter and collector. To distinguish between these two minority carrier hole distributions, we use the notation shown in the figure. Keep in mind that we are dealing only with minority carriers. The parameters \( p_{E0}, n_{B0}, \) and \( p_{C0} \) denote the thermal-equilibrium minority carrier concentrations in the emitter, base, and collector, respectively. The functions \( p_E(x'), n_B(x), \) and \( p_C(x'') \) denote the steady-state minority carrier concentrations in the emitter, base, and collector, respectively. We assume that the neutral collector length \( x_C \) is long compared to the minority carrier diffusion length \( L_C \) in the collector, but we take into account a finite emitter length \( x_E \). If we assume that the surface recombination velocity at \( x' = x_E \) is infinite, then the excess minority carrier concentration at \( x' = x_E \) is zero, or \( p_E(x' = x_E) = p_{E0} \). An infinite surface recombination velocity is a good approximation when an ohmic contact is fabricated at \( x' = x_E \).
 
-## Base Region
+#### Base Region
 
 The steady-state excess minority carrier electron concentration is found from the ambipolar transport equation, which we discussed in detail in Chapter 6. For a zero electric field in the neutral base region, the ambipolar transport equation in steady state reduces to
 
@@ -356,7 +320,6 @@ The general solution to Equation (12.9) can be written as
 
 (12.11)
 
-# Chapter 12: The Bipolar Transistor
 
 where \( L_B \) is the minority carrier diffusion length in the base, given by \( L_B = \sqrt{D_B \tau_{B0}} \). The base is of finite width so both exponential terms in Equation (12.11) must be retained.
 
@@ -418,10 +381,6 @@ Then, substituting Equations (12.14a) and (12.14b) into Equation (12.9), we can 
 
 Equation (12.15a) may look formidable with the sinh functions. We have stressed that we want the base width \( x_B \) to be small compared to the minority carrier diffusion length \( L_B \). This condition may seem somewhat arbitrary at this point, but the reason becomes clear as we proceed through all of the calculations. Since we want \( x_B < L_B \), the argument in the sinh functions is always less than unity and in most cases will be much less than unity. Figure 12.15 shows a plot of sinh \( y \) for \( 0 \leq y \leq 1 \) and also shows the linear approximation for small values of \( y \). If \( y < 0.4 \), the sinh \( y \) function differs from its linear approximation by less than 3 percent. All of this leads to the conclusion that the excess electron concentration \( \delta n_{B} \) in Equation (12.15a) is approximately a linear function of \( x \) through the neutral base region.
 
-## 12.2 Minority Carrier Distribution
-
-!Graph
-
 **Figure 12.15** Hyperbolic sine function and its linear approximation.
 
 Using the approximation that \(\sinh(x) \approx x\) for \(x \ll 1\), the excess electron concentration in the base is given by
@@ -434,9 +393,8 @@ Using the approximation that \(\sinh(x) \approx x\) for \(x \ll 1\), the excess 
 
 We use this linear approximation later in some of the example calculations. The difference in the excess carrier concentrations determined from Equations (12.15a) and (12.15b) is demonstrated in the following exercise.
 
-----
 
-### TEST YOUR UNDERSTANDING
+## TEST YOUR UNDERSTANDING
 
 **TYU 12.1** The emitter and base of a silicon npn bipolar transistor are uniformly doped at impurity concentrations of \(10^{18} \, \text{cm}^{-3}\) and \(10^{16} \, \text{cm}^{-3}\), respectively. A forward-bias B–E voltage of \(V_{BE} = 0.610 \, \text{V}\) is applied. The neutral base width is \(x_B = 2 \, \mu\text{m}\) and the minority carrier diffusion length in the base is \(L_B = 10 \, \mu\text{m}\). Calculate the excess minority carrier concentration in the base at (a) \(x = 0\) and (b) \(x = x_B/2\). (c) Determine the ratio of the actual minority carrier concentration at \(x = x_B/2\) [Equation (12.15a)] to that in the ideal case of a linear minority carrier distribution [Equation (12.15b)].
 
@@ -449,9 +407,7 @@ We use this linear approximation later in some of the example calculations. The 
 
 Table 12.2 shows the Taylor expansions of some of the hyperbolic functions that are encountered in this section of the chapter. In most cases, we consider only the linear terms when expanding these functions.
 
-# CHAPTER 12 The Bipolar Transistor
-
-## Table 12.2.1 Taylor expansions of hyperbolic functions
+**Table 12.2**| Taylor expansions of hyperbolic functions
 
 | Function | Taylor expansion |
 |----------|------------------|
@@ -459,7 +415,7 @@ Table 12.2 shows the Taylor expansions of some of the hyperbolic functions that 
 | cosh \(x\) | \(1 + \frac{x^2}{2!} + \frac{x^4}{4!} + \cdots\) |
 | tanh \(x\) | \(x - \frac{x^3}{3} + \frac{2x^5}{15} + \cdots\) |
 
-### Emitter Region
+#### Emitter Region
 
 Consider, now, the minority carrier hole concentration in the emitter. The steady-state excess hole concentration is determined from the equation
 
@@ -527,8 +483,6 @@ Solving for \(C\) and \(D\) using Equations (12.19) and (12.20) yields the exces
 
 (12.21a)
 
-## 12.2 Minority Carrier Distribution
-
 This excess concentration will also vary approximately linearly with distance if \( x_E \) is small. We find
 
 \[
@@ -539,15 +493,13 @@ This excess concentration will also vary approximately linearly with distance if
 
 If \( x_E \) is comparable to \( L_E \), then \( \delta p_E(x') \) shows an exponential dependence on \( x_E \).
 
-----
 
-### TEST YOUR UNDERSTANDING
+## TEST YOUR UNDERSTANDING
 
 **TYU 12.2** Consider a silicon npn bipolar transistor with emitter and base regions uniformly doped at concentrations of \( 10^{18} \text{cm}^{-3} \) and \( 10^{16} \text{cm}^{-3} \), respectively. A forward-bias B–E voltage of \( V_{BE} = 0.610 \, \text{V} \) is applied. The neutral emitter width is \( x_E = 4 \, \mu \text{m} \) and the minority carrier diffusion length in the emitter is \( L_E = 4 \, \mu \text{m} \). Calculate the excess minority carrier concentration in the emitter at (a) \( x' = 0 \) and (b) \( x' = x_E/2 \).
 
-----
 
-### Collector Region
+#### Collector Region
 
 The excess minority carrier hole concentration in the collector can be determined from the equation
 
@@ -591,13 +543,12 @@ The excess minority carrier hole concentration in the collector is then given as
 
 This result is exactly what we expect from the results of a reverse-biased pn junction.
 
-----
 
-### TEST YOUR UNDERSTANDING
+## TEST YOUR UNDERSTANDING
 
 **TYU 12.3** Consider the collector region of an npn bipolar transistor biased in the forward-active region. At what value of \( x' \), compared to \( L_C \), does the magnitude of the minority carrier concentration reach 95 percent of the thermal-equilibrium value? (\( x' \approx \eta L_C \, \text{where} \, \eta \approx 3 \))
 
-# 12.2.2 Other Modes of Operation
+### 12.2.2 Other Modes of Operation
 
 The bipolar transistor can also operate in the cutoff, saturation, or inverse-active mode. We qualitatively discuss the minority carrier distributions for these operating conditions and treat the actual calculations as problems at the end of the chapter.
 
@@ -607,31 +558,25 @@ Figure 12.16b shows the minority carrier distribution in the npn bipolar transis
 
 Finally, Figure 12.17a shows the minority carrier distribution in the npn transistor for the inverse-active mode. In this case, the B–E is reverse biased and the B–C is forward biased. Electrons from the collector are now injected into the base. The gradient in the minority carrier electron concentration in the base is in the opposite direction.
 
-!Figure 12.16
 
 **Figure 12.16** | Minority carrier distribution in an npn bipolar transistor operating in (a) cutoff and (b) saturation.
 
-!Figure 12.17
 
 **Figure 12.17** | (a) Minority carrier distribution in an npn bipolar transistor operating in the inverse-active mode. (b) Cross section of an npn bipolar transistor showing the injection and collection of electrons in the inverse-active mode.
 
-# 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
+## 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
 
 The basic principle of operation of the bipolar transistor is the control of the collector current by the B–E voltage. The collector current is a function of the number of majority carriers reaching the collector after being injected from the emitter across the B–E junction. The **common-base current gain** is defined as the ratio of collector current to emitter current. The flow of various charged carriers leads to definitions of particular currents in the device. We can use these definitions to define the current gain of the transistor in terms of several factors.
 
-## 12.3.1 Current Gain—Contributing Factors
+### 12.3.1 Current Gain—Contributing Factors
 
 Figure 12.18 shows the various particle flux components in the npn bipolar transistor. We define the various flux components and then consider the resulting currents. Although there seems to be a large number of flux components, we may help clarify the situation by correlating each factor with the minority carrier distributions shown in Figure 12.14.
 
 The factor \( J_{E}^{n} \) is the electron flux injected from the emitter into the base. As the electrons diffuse across the base, a few will recombine with majority carrier holes. The majority carrier holes that are lost by recombination must be replenished from the base terminal. This replacement hole flux is denoted by \( J_{B}^{R} \). The electron flux that reaches the collector is \( J_{C}^{n} \). The majority carrier holes from the base that are injected back into the emitter result in a hole flux denoted by \( J_{E}^{p} \). Some electrons and holes
 
-!Figure 12.18
 
 **Figure 12.18** | Particle current density or flux components in an npn bipolar transistor operating in the forward-active mode.
 
-# CHAPTER 12 The Bipolar Transistor
-
-!Figure 12.19  
 **Figure 12.19** | Current density components in an npn bipolar transistor operating in the forward-active mode.
 
 that are injected into the forward-biased B–E space charge region will recombine in this region. This recombination leads to the electron flux \( J_{E} \). Generation of electrons and holes occurs in the reverse-biased B–C junction. This generation yields a hole flux \( J_{G} \). Finally, the ideal reverse-saturation current in the B–C junction is denoted by the hole flux \( J_{C0} \).
@@ -645,8 +590,6 @@ The corresponding electric current density components in the npn transistor are 
 - \( J_{rE} \): Due to the recombination of carriers in the forward-biased B–E junction.
 - \( J_{pC0} \): Due to the diffusion of minority carrier holes in the collector at \( x'' = 0 \).
 - \( J_{G} \): Due to the generation of carriers in the reverse-biased B–C junction.
-
-# 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
 
 The currents \( J_{RB}, J_{E\ell}, \) and \( J_R \) are B–E junction currents only and do not contribute to the collector current. The currents \( J_{x0} \) and \( J_G \) are B–C junction currents only. These current components do not contribute to the transistor action or the current gain.
 
@@ -714,11 +657,11 @@ We would like to have the change in collector current be exactly the same as the
 
 The **emitter injection efficiency factor** \( \gamma \) takes into account the minority carrier hole diffusion current in the emitter. This current is part of the emitter current, but does not contribute to the transistor action in that \( J_{E\ell} \) is not part of the collector current. The **base transport factor** \( \alpha_T \) takes into account any recombination of excess minority carrier electrons in the base. Ideally, we want no recombination in the base. The **recombination factor** \( \delta \) takes into account the recombination in the base.
 
-# 12.3.2 Derivation of Transistor Current Components and Current Gain Factors
+### 12.3.2 Derivation of Transistor Current Components and Current Gain Factors
 
 We now wish to determine the various transistor current components and each of the gain factors in terms of the electrical and geometrical parameters of the transistor. The results of these derivations show how the various parameters in the transistor influence the electrical properties of the device and point the way to the design of a "good" bipolar transistor.
 
-## Emitter Injection Efficiency Factor
+#### Emitter Injection Efficiency Factor
 
 Consider, initially, the emitter injection efficiency factor. We have from Equation (12.31a)
 
@@ -774,7 +717,7 @@ and also
 \frac{\exp \left( eV_{BE}/kT \right)}{\tanh (x_{B}/L_{B})} \gg \frac{1}{\sinh (x_{B}/L_{B})}
 \]
 
-# Transistor Currents and Low-Frequency Common-Base Current Gain
+#### Transistor Currents and Low-Frequency Common-Base Current Gain
 
 The emitter injection efficiency, from Equation (12.32), then becomes
 
@@ -798,13 +741,15 @@ where \(N_E\) and \(N_B\) are the impurity doping concentrations in the emitter 
 
 (12.35b)
 
-## Objective
+## EXAMPLE 12.1
+
+**Objective**
 
 Calculate the emitter injection efficiency.
 
 Assume the following transistor parameters: \(N_B = 10^{15} \, \text{cm}^{-3}\), \(N_E = 10^{17} \, \text{cm}^{-3}\), \(D_E = 10 \, \text{cm}^2/\text{s}\), \(D_B = 20 \, \text{cm}^2/\text{s}\), \(x_B = 0.80 \, \mu\text{m}\), and \(x_E = 0.60 \, \mu\text{m}\).
 
-## Solution
+**Solution**
 
 From Equation (12.35b), we find
 
@@ -812,16 +757,16 @@ From Equation (12.35b), we find
 \gamma = \frac{1}{1 + \left(\frac{N_B}{N_E} \cdot \frac{D_E}{D_B} \cdot \frac{x_B}{x_E}\right)} = \frac{1}{1 + \left(\frac{10^{15}}{10^{17}} \cdot \frac{10}{20} \cdot \frac{0.80}{0.60}\right)} = 0.9934
 \]
 
-## Comment
+**Comment**
 
 This simple example shows a typical magnitude of the emitter injection efficiency.
 
-## EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.1** Repeat Example 12.1 if the base and emitter doping concentrations are \(N_B = 5 \times 10^{15} \, \text{cm}^{-3}\) and \(N_E = 10^{18} \, \text{cm}^{-3}\), respectively.  
 (\(J_{S6} = 0 = \lambda \cdot SV\))
 
-## Base Transport Factor
+#### Base Transport Factor
 
 The next term to consider is the base transport factor, given by Equation (12.31b) as \(\alpha_T = J_{C}/J_{E}\). From the definitions of the current directions shown in Figure 12.19, we can write
 
@@ -830,8 +775,6 @@ J_{C} = (-e) D_B \left. \frac{d[n_B(x)]}{dx} \right|_{x=x_B}
 \]
 
 (12.36a)
-
-# CHAPTER 12 The Bipolar Transistor
 
 and
 
@@ -877,7 +820,6 @@ For \(x_{B} \ll L_{B}\), we may expand the cosh function in a Taylor series, so 
 
 The base transport factor \(\alpha_{T}\) will be close to one if \(x_{B} \ll L_{B}\). We can now see why we indicated earlier that the neutral base width \(x_{B}\) would be less than \(L_{B}\).
 
-----
 
 ## EXAMPLE 12.2
 
@@ -885,7 +827,7 @@ The base transport factor \(\alpha_{T}\) will be close to one if \(x_{B} \ll L_{
 
 Assume transistor parameters of \(x_{B} = 0.80 \, \mu m\) and \(L_{B} = 10.0 \, \mu m\).
 
-### Solution
+**Solution**
 
 From Equation (12.39a), we find
 
@@ -893,17 +835,15 @@ From Equation (12.39a), we find
 \alpha_{T} \approx \frac{1}{\cosh \left( \frac{x_{B}}{L_{B}} \right)} = \frac{1}{\cosh \left( \frac{0.80}{10.0} \right)} = 0.9968
 \]
 
-### Comment
+**Comment**
 
 This simple example shows a typical magnitude of the base transport factor.
 
-### EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.2** Repeat Example 12.2 for \(x_{B} = 1.2 \, \mu m\) and \(L_{B} = 10.0 \, \mu m\). (8%60 = 40 %V)
 
-# 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
-
-## Recombination Factor
+#### Recombination Factor
 
 The recombination factor is given by Equation (12.31c). We can write
 
@@ -949,13 +889,13 @@ The recombination factor, from Equation (12.40), can then be written as
 
 The recombination factor is a function of the B–E voltage. As \( V_{BE} \) increases, the recombination current becomes less dominant and the recombination factor approaches unity.
 
-----
+## EXAMPLE 12.3
 
-## Objective: Calculate the recombination factor.
+**Objective**: Calculate the recombination factor.
 
 Assume the following transistor parameters: \( x_{BE} = 0.10 \, \mu m, \, \tau_o = 10^{-7} s, \, N_B = 5 \times 10^{15} \, cm^{-3}, \, D_B = 20 \, cm^2/s, \, L_B = 10 \, \mu m, \) and \( x_B = 0.80 \, \mu m \). Assume \( V_{BE} = 0.50 \, V \).
 
-### Solution
+**Solution**
 
 From Equation (12.41), we find
 
@@ -973,7 +913,6 @@ J_{xo} = \frac{e D_B n_{i0}}{L_B \tanh (x_B/L_B)} = \frac{e D_B (n_i^2/N_B)}{L_B
 = \frac{(1.6 \times 10^{-19})(20)((1.5 \times 10^{10})^2/5 \times 10^{15})}{(10 \times 10^{-4})\tanh(0.80/10.0)} = 1.804 \times 10^{-9} \, A/cm^2
 \]
 
-# Chapter 12: The Bipolar Transistor
 
 Then from Equation (12.44), the recombination factor is found as
 
@@ -988,23 +927,19 @@ Then from Equation (12.44), the recombination factor is found as
 **Comment**  
 This simple example shows a typical magnitude of the recombination factor.
 
-## Exercise Problem
+**Exercise Problem**
 
 **Ex 12.3** Repeat Example 12.3 for \( V_{BE} = 0.65 \, \text{V} \). \( 9(6660 = 9 \, \text{suv}) \)
 
-----
 
 The recombination factor must also include surface effects. The surface effects can be described by the surface recombination velocity as we discussed in Chapter 6. Figure 12.20a shows the B–E junction of an npn transistor near the semiconductor surface. We assume that the B–E junction is forward biased. Figure 12.20b shows the excess minority carrier electron concentration in the base along the cross section A–A'. This curve is the usual forward-biased junction minority carrier concentration. Figure 12.20c shows the excess minority carrier electron concentration along the cross section C–C' from the surface. We have showed earlier that the excess concentration at a surface is smaller than the excess concentration in the bulk material. With this electron distribution, there is a diffusion of electrons from the bulk toward the surface where the electrons recombine with the majority carrier holes. Figure 12.20d shows the injection of electrons from the emitter into the base and the diffusion of
 
-!Figure 12.20
 
 **Figure 12.20** | The surface at the E–B junction showing the diffusion of carriers toward the surface.
 
-# 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
-
 Electrons toward the surface. This diffusion generates another component of recombination current and this component of recombination current must be included in the recombination factor δ. Although the actual calculation is difficult because of the two-dimensional analysis required, the form of the recombination current is the same as that of Equation (12.41).
 
-## 12.3.3 Summary
+### 12.3.3 Summary
 
 Although we have considered an npn transistor in all of the derivations, exactly the same analysis applies to a pnp transistor; the same minority carrier distributions are obtained except that the electron concentrations become hole concentrations and vice versa. The current directions and voltage polarities also change.
 
@@ -1034,45 +969,42 @@ The common-base current gain, in terms of the common-emitter current gain, is fo
 
 Table 12.3 summarizes the expressions for the limiting factors in the common-base current gain assuming that \( x_B \ll L_B \) and \( x_E^* \ll L_E \). Also given are the approximate expressions for the common-base current gain and the common-emitter current gain.
 
-## 12.3.4 Example Calculations of the Gain Factors
+### 12.3.4 Example Calculations of the Gain Factors
 
 If we assume a typical value of \( \beta \) to be 100, then \( \alpha = 0.99 \). If we also assume that \( \gamma = \alpha_T = \bar{\delta} \), then each factor would have to be equal to 0.9967 in order that \( \beta = 100 \). This calculation gives an indication of how close to unity each factor must be in order to achieve a reasonable current gain.
 
-# Chapter 12: The Bipolar Transistor
 
-## Table 12.3 | Summary of Limiting Factors
+**Table 12.3** | Summary of Limiting Factors
 
-### Emitter Injection Efficiency
+#### Emitter Injection Efficiency
 
 \[
 \gamma \approx \frac{1}{1 + \frac{N_B}{N_E} \cdot \frac{D_E}{D_B} \cdot \frac{x_B}{x_E}} \quad (x_B \ll L_B), (x_E \ll L_E)
 \]
 
-### Base Transport Factor
+#### Base Transport Factor
 
 \[
 \alpha_T \approx \frac{1}{1 + \frac{1}{2} \left( \frac{x_B}{L_B} \right)} \quad (x_B \ll L_B)
 \]
 
-### Recombination Factor
+#### Recombination Factor
 
 \[
 \delta = \frac{1}{1 + \frac{J_{BO}}{J_O} \exp \left( \frac{-eV_{BE}}{2kT} \right)}
 \]
 
-### Common-Base Current Gain
+#### Common-Base Current Gain
 
 \[
 \alpha = \gamma \alpha_T \delta \approx \frac{1}{1 + \frac{N_B}{N_E} \cdot \frac{D_E}{D_B} \cdot \frac{x_B}{x_E} + \frac{1}{2} \left( \frac{x_B}{L_B} \right) + \frac{J_{BO}}{J_O} \exp \left( \frac{-eV_{BE}}{2kT} \right)}
 \]
 
-### Common-Emitter Current Gain
+#### Common-Emitter Current Gain
 
 \[
 \beta = \frac{\alpha}{1 - \alpha} \approx \frac{1}{\frac{N_B}{N_E} \cdot \frac{D_E}{D_B} \cdot \frac{x_B}{x_E} + \frac{1}{2} \left( \frac{x_B}{L_B} \right) + \frac{J_{BO}}{J_O} \exp \left( \frac{-eV_{BE}}{2kT} \right)}
 \]
-
-----
 
 ## Design Example 12.4
 
@@ -1080,7 +1012,7 @@ If we assume a typical value of \( \beta \) to be 100, then \( \alpha = 0.99 \).
 
 - Consider an npn bipolar transistor. Assume, for simplicity, that \(D_E = D_B, L_E = L_B\), and \(x_E = x_B\).
 
-### Solution
+**Solution**
 
 Equation (12.35b) reduces to
 
@@ -1100,28 +1032,24 @@ Then
 \frac{N_B}{N_E} = 0.00331 \quad \text{or} \quad \frac{N_E}{N_B} = 302
 \]
 
-### Comment
+**Comment**
 
 The emitter doping concentration must be much larger than the base doping concentration to achieve a high emitter injection efficiency.
 
-## 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
-
-### EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.4**  
 Assume that transistor parameters are the same as described in Example 12.4. In addition, let \( N_B = 6 \times 10^{18} \, \text{cm}^{-3} \). Determine the base doping concentration such that the emitter injection efficiency is \( \gamma = 0.9950 \).
 
-----
+## **DESIGN EXAMPLE 12.5**
 
-### Objective
+**Objective**
 
 Design the base width required to achieve a base transport factor of \( \alpha_T = 0.9967 \).
 
 Consider a pnp bipolar transistor. Assume that \( D_B = 10 \, \text{cm}^2/\text{s} \) and \( \tau_{B0} = 10^{-7} \text{s} \).
 
-**DESIGN EXAMPLE 12.5**
-
-#### Solution
+**Solution**
 
 The base transport factor applies to both pnp and npn transistors and is given by
 
@@ -1147,36 +1075,32 @@ so that the base width must then be
 x_B = 0.814 \times 10^{-4} \, \text{cm} = 0.814 \, \mu\text{m}
 \]
 
-#### Comment
+**Comment**
 
 If the base width is less than approximately 0.8 \(\mu\text{m}\), then the required base transport factor will be achieved. In most cases, the base transport factor will not be the limiting factor in the bipolar transistor current gain.
 
-----
 
-### EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.5**  
 Assume that transistor parameters are the same as described in Example 12.5. Determine the minimum base width \( x_B \) such that the base transport factor is \( \alpha_T = 0.9980 \).
 
-----
+## **DESIGN EXAMPLE 12.6**
 
-### Objective
+**Objective**
 
 Determine the forward-biased B–E voltage required to achieve a recombination factor equal to \( \delta = 0.9967 \).
 
 Consider an npn bipolar transistor at \( T = 300 \, \text{K} \). Assume that \( J_{s0} = 10^{-8} \, \text{A/cm}^2 \) and that \( J_0 = 10^{-11} \, \text{A/cm}^2 \).
 
-**DESIGN EXAMPLE 12.6**
 
-#### Solution
+**Solution**
 
 The recombination factor, from Equation (12.44), is
 
 \[
 \delta = \frac{1}{1 + \frac{J_{s0}}{J_0} \exp\left(\frac{-eV_{BE}}{2kT}\right)}
 \]
-
-# CHAPTER 12 The Bipolar Transistor
 
 We then have
 
@@ -1204,7 +1128,6 @@ This example demonstrates that the recombination factor may be an important limi
 
 Ex 12.6 If \( J_{B0} = 10^{-8} \, \text{A/cm}^2 \) and \( J_{E0} = 10^{-11} \, \text{A/cm}^2 \), determine the value of \( V_{BE} \) such that \(\delta = 0.9950\). (\( \lambda 0.0299 = 39A \, \mu V \))
 
-----
 
 ## EXAMPLE 12.7
 
@@ -1249,8 +1172,6 @@ The emitter injection efficiency factor, from Equation (12.35a), is
 \gamma = \frac{1}{1 + \frac{(2.25 \times 10^4)(0.54 \times 10^{-3})}{(2.25 \times 10^2)(25 \times 10^{-5})} \cdot \frac{\tanh(0.0198)}{\tanh(0.050)}} = 0.9944
 \]
 
-## 12.3 Transistor Currents and Low-Frequency Common-Base Current Gain
-
 The base transport factor, from Equation (12.39a), is
 
 \[
@@ -1281,17 +1202,16 @@ which gives a common-emitter current gain of
 \beta = \frac{\alpha}{1 - \alpha} = \frac{0.99406}{1 - 0.99406} = 167
 \]
 
-### Comment
+**Comment**
 
 In this example, the emitter injection efficiency is the limiting factor in the current gain.
 
-### EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.7** Assume that \(\gamma = \alpha_T = 0.9980\), \(J_0 = 5 \times 10^{-8} \, \text{A/cm}^2\), and \(J_0 = 2 \times 10^{-11} \, \text{A/cm}^2\). Determine the common-emitter current gain \(\beta\) for (a) \(V_{BE} = 0.550 \, \text{V}\) and (b) \(V_{BE} = 0.650 \, \text{V}\).
 
-----
 
-### TEST YOUR UNDERSTANDING
+## TEST YOUR UNDERSTANDING
 
 **NOTE:** In the following Test Your Understanding questions, assume a silicon npn bipolar transistor at \(T = 300 \, \text{K}\) has the following minority carrier parameters: \(D_e = 8 \, \text{cm}^2/\text{s}\), \(D_B = 20 \, \text{m}^2/\text{s}\), \(D_C = 12 \, \text{cm}^2/\text{s}\), \(\tau_B = 10^{-8} \, \text{s}\), \(\tau_{BO} = 10^{-7} \, \text{s}\), and \(\tau_{CO} = 10^{-6} \, \text{s}\).
 
@@ -1301,23 +1221,21 @@ In this example, the emitter injection efficiency is the limiting factor in the 
 
 **TYU 12.6** Assume that \(\gamma = \delta = 0.9967\) and \(x_B = 0.80 \, \mu\text{m}\). Determine the common-emitter current gain \(\beta\).
 
-# 12.4 Nonideal Effects
+## 12.4 Nonideal Effects
 
 In all previous discussions, we have considered a transistor with uniformly doped regions, low injection, constant emitter and base widths, an ideal constant energy bandgap, uniform current densities, and junctions that are not in breakdown. If any of these ideal conditions is not present, then the transistor properties will deviate from the ideal characteristics we have derived.
 
-## 12.4.1 Base Width Modulation
+### 12.4.1 Base Width Modulation
 
 We have implicitly assumed that the neutral base width \( x_B \) is constant. This base width, however, is a function of the B–C voltage, since the width of the space charge region extending into the base region varies with B–C voltage. As the B–C reverse-biased voltage increases, the B–C space charge region width increases, which reduces \( x_B \). A change in the neutral base width will change the collector current as can be observed in Figure 12.21. A reduction in base width will cause the gradient in the minority carrier concentration to increase, which in turn causes an increase in the diffusion current. This effect is known as **base width modulation**; it is also called the **Early effect**.
 
 The Early effect can be seen in the current–voltage characteristics shown in Figure 12.22. In most cases, a constant base current is equivalent to a constant B–E voltage. Ideally the collector current is independent of the B–C voltage so that the slope of the curves would be zero; thus, the output conductance of the transistor would be zero. However, the base width modulation, or Early effect, produces a nonzero slope and gives rise to a finite output conductance. If the collector current characteristics are extrapolated to zero collector current, the curves intersect the voltage axis at a point that is defined as the Early voltage. The Early voltage is considered to be a positive value. It is a common parameter given in transistor specifications; typical values of Early voltage are in the 100- to 300-V range.
 
-!Figure 12.21
 
 **Figure 12.21** The change in the base width and the change in the minority carrier gradient as the B–C space charge width changes.
 
-# 12.4 Nonideal Effects
+## 12.4 Nonideal Effects
 
-!Figure 12.22  
 *The collector current versus collector–emitter voltage showing the Early effect and Early voltage.*
 
 From Figure 12.22, we can write that
@@ -1338,16 +1256,13 @@ I_C = g_o (V_{CE} + V_A) = \frac{1}{r_o} (V_{CE} + V_A)
 
 showing that the collector current is now an explicit function of the collector–emitter voltage or the collector–base voltage.
 
-----
-
+## **Example 12.8**
 **Objective:** Calculate the change in collector current with a change in neutral base width, and estimate the Early voltage.
-
-**Example 12.8**
 
 Consider a uniformly doped silicon pnp bipolar transistor with the following parameters:  
 \( N_B = 5 \times 10^{16} \, \text{cm}^{-3} \), \( N_C = 2 \times 10^{15} \, \text{cm}^{-3} \), \( x_{B0} = 0.70 \, \mu\text{m} \), and \( D_B = 25 \, \text{cm}^2/\text{s} \). Assume that \( x_{B0} \ll L_B \) and that \( V_{BE} = 0.60 \, \text{V} \). The collector–base voltage is in the range \( 2 \leq V_{CB} \leq 10 \, \text{V} \).
 
-### Solution
+**Solution**
 
 Assuming \( x_{B0} \ll L_B \), the excess minority carrier electron concentration in the base can be approximated by Equation (12.15b), which is
 
@@ -1372,8 +1287,6 @@ For \( V_{CB} = 2 \, \text{V} \), we find (see the following Exercise Problem Ex
 \[
 x_B = x_{B0} - x_{BB} = 0.70 - 0.0518 = 0.6482 \, \mu\text{m}
 \]
-
-# CHAPTER 12 The Bipolar Transistor
 
 and
 
@@ -1411,24 +1324,20 @@ The Early voltage is then determined to be
 V_A = 90.7 \, \text{V}
 \]
 
-## Comment
+**Comment**
 
 This example indicates how much the collector current can change as the neutral base width changes with a change in the B–C space charge width, and it also indicates the magnitude of the Early voltage.
 
-## EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.8** Consider a silicon npn bipolar transistor with parameters described in Example 12.8. Determine the neutral base width for a C–B voltage of  
 (a) \( V_{CB} = 2 \, \text{V} \) and (b) \( V_{CB} = 10 \, \text{V} \). Neglect the B–E space charge width.
 
 The previous example and exercise problem demonstrate, too, that we can expect variations in transistor properties due to tolerances in transistor-fabrication processes. There will be variations, in particular, in the base width of narrow-base transistors that will cause variations in the collector current characteristics simply due to the tolerances in processing.
 
-## 12.4.2 High Injection
+### 12.4.2 High Injection
 
 The ambipolar transport equation that we have used to determine the minority carrier distributions assumed low injection. As \( V_{BE} \) increases, the injected minority carrier concentration may approach, or even become larger than, the majority carrier concentration. If we assume quasi–charge neutrality, then the majority carrier hole concentration in the p-type base at \( x = 0 \) will increase as shown in Figure 12.23 because of the excess holes.
-
-## 12.4 Nonideal Effects
-
-!Graphs
 
 **Figure 12.23** | Minority and majority carrier concentrations in the base under low and high injection (solid line: low injection; dashed line: high injection).
 
@@ -1460,14 +1369,12 @@ At high injection, Equation (12.46c) still applies. However, \( p_p(0) \) will a
 n_p(0) \approx n_{p0} \exp \left( \frac{eV_{BE}}{2kT} \right) \tag{12.47}
 \]
 
-# Chapter 12: The Bipolar Transistor
 
-!Figure 12.25  
 **Figure 12.25** | Collector current versus base–emitter voltage showing high-injection effects.
 
 The excess minority carrier concentration in the base, and hence the collector current, will increase at a slower rate with B–E voltage in high injection than low injection. This effect is shown in Figure 12.25. The high-injection effect is very similar to the effect of a series resistance in a pn junction diode.
 
-## 12.4.3 Emitter Bandgap Narrowing
+### 12.4.3 Emitter Bandgap Narrowing
 
 Another phenomenon affecting the emitter injection efficiency is bandgap narrowing. We have implied from our previous discussion that the emitter injection efficiency factor will continue to increase and approach unity as the ratio of emitter doping to base doping continues to increase. As silicon becomes heavily doped, the discrete donor energy level in an n-type emitter splits into a band of energies. The distance between donor atoms decreases as the concentration of impurity donor atoms increases, and the splitting of the donor level is caused by the interaction of donor atoms with each other. As the doping continues to increase, the donor band widens, becomes skewed, and moves up toward the conduction band, eventually merging with it. At this point, the effective bandgap energy has decreased. Figure 12.26 shows a plot of the change in the bandgap energy with impurity doping concentration.
 
@@ -1487,9 +1394,7 @@ n_{ie}^2 = N_c N_v \exp\left(\frac{-E_{g0} - \Delta E_g}{kT}\right) = n_i^2 \exp
 
 (12.49)
 
-### 12.4 Nonideal Effects
-
-!Bandgap narrowing factor versus donor impurity concentration in silicon.
+## 12.4 Nonideal Effects
 
 **Figure 12.26** | Bandgap narrowing factor versus donor impurity concentration in silicon.  
 *(From Sze [19].)*
@@ -1510,11 +1415,9 @@ p_{E0} = \frac{n_i^2}{N_E} = \frac{n_i^2}{N_E} \exp\left(\frac{\Delta E_g}{kT}\r
 
 As the emitter doping concentration increases, \( \Delta E_g \) increases; thus, \( p_{E0} \) does not continue to decrease with increasing emitter doping \( N_E \). If \( p_{E0} \) starts to increase because of the bandgap narrowing, the emitter injection efficiency begins to fall off instead of continuing to increase with increased emitter doping.
 
-----
+## **Example 12.9**
 
 **Objective:** Determine the increase in \( p_{E0} \) in the emitter due to bandgap narrowing.
-
-**Example 12.9**
 
 Consider a silicon emitter at \( T = 300 \, \text{K} \). Assume the emitter doping increases from \( 10^{18} \) to \( 10^{19} \, \text{cm}^{-3} \). Determine the new value of \( p_{E0} \) and determine the ratio \( p_{E0}/p_{B0} \).
 
@@ -1531,9 +1434,6 @@ and
 \[
 p_{E0} = \frac{n_i^2}{N_E} = \frac{(1.5 \times 10^{10})^2}{10^{19}} = 2.25 \times 10^1 \, \text{cm}^{-3}
 \]
-
-```markdown
-# CHAPTER 12 The Bipolar Transistor
 
 Taking into account the bandgap narrowing effect shown in Figure 12.26, we obtain, respectively, for \( N_E = 10^{18} \) and \( 10^{19} \) cm\(^{-3}\),
 
@@ -1559,46 +1459,36 @@ and for \( N_E = 10^{19} \) cm\(^{-3}\), we find
 \frac{p_{E0}}{p_{E0}} = \exp \left( \frac{0.080}{0.0259} \right) = 21.95
 \]
 
-### Comment
+**Comment**
 
 If the emitter doping concentration increases from \( 10^{18} \) to \( 10^{19} \) cm\(^{-3}\), the thermal-equilibrium minority carrier concentration actually increases rather than decreasing by a factor of 10 as would be expected.
 
-### EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.9** Determine the thermal-equilibrium minority carrier concentration for an emitter doping concentration of \( N_E = 10^{20} \) cm\(^{-3} \) taking into account bandgap narrowing.
 
-----
 
 As the emitter doping increases, the bandgap narrowing factor, \( \Delta E_g \), will increase; this can actually cause \( p_{E0} \) to increase. As \( p_{E0} \) increases, the emitter injection efficiency decreases; this then causes the transistor gain to decrease, as shown in Figure 12.24. A very high emitter doping may result in a smaller current gain than we anticipate because of the bandgap narrowing effect.
 
-## 12.4.4 Current Crowding
+### 12.4.4 Current Crowding
 
 It is tempting to neglect the effects of base current in a transistor since the base current is usually much smaller than either the collector or the emitter current. Figure 12.27 is a cross section of an npn transistor showing the lateral distribution of base current. The base region is typically less than a micrometer thick, so there can be a sizable base resistance. The nonzero base resistance results in a lateral potential difference under the emitter region. For the npn transistor, the potential decreases from the edge of the emitter toward the center. The emitter is highly doped, so as a first approximation the emitter can be considered an equipotential region.
 
 The number of electrons from the emitter injected into the base is exponentially dependent on the B–E voltage. With the lateral voltage drop in the base between the edge and center of the emitter, more electrons will be injected near the emitter edges than in the center, causing the emitter current to be crowded toward the edges. This
-```
 
-# 12.4 Nonideal Effects
+## 12.4 Nonideal Effects
 
-!Figure 12.27  
 **Figure 12.27** | Cross section of an npn bipolar transistor showing the base current distribution and the lateral potential drop in the base region.
 
-!Figure 12.28  
 **Figure 12.28** | Cross section of an npn bipolar transistor showing the emitter current crowding effect.
 
 The current crowding effect is schematically shown in Figure 12.28. The larger current density near the emitter edge may cause localized heating effects as well as localized high-injection effects. The nonuniform emitter current also results in a nonuniform lateral base current under the emitter. A two-dimensional analysis would be required to calculate the actual potential drop versus distance because of the nonuniform base current. Another approach is to slice the transistor into a number of smaller parallel transistors and to lump the resistance of each base section into an equivalent external resistance.
 
 Power transistors, designed to handle large currents, require large emitter areas to maintain reasonable current densities. To avoid the current crowding effect, these transistors are usually designed with narrow emitter widths and fabricated with an interdigitated design. Figure 12.29 shows the basic geometry. In effect, many narrow emitters are connected in parallel to achieve the required emitter area.
 
-!Figure 12.29  
 **Figure 12.29** | (a) Top view and (b) cross section of an interdigitated npn bipolar transistor structure.
 
-```markdown
-!Figure 12.30 | Figure for TYU 12.7.
-
-----
-
-### TEST YOUR UNDERSTANDING
+## TEST YOUR UNDERSTANDING
 
 **TYU 12.7** Consider the geometry shown in Figure 12.30. The base doping concentration is \( N_B = 10^{16} \, \text{cm}^{-3} \), the neutral base width is \( x_B = 0.80 \, \mu\text{m} \), the emitter width is \( S = 10 \, \mu\text{m} \), and the emitter length is \( L = 10 \, \mu\text{m} \).
 
@@ -1608,7 +1498,6 @@ Power transistors, designed to handle large currents, require large emitter area
 
 (c) Using the results of part (b), what is the ratio of emitter current density at \( x = 0 \) to that at \( x = S/2 \)?
 
-----
 
 ### *12.4.5 Nonuniform Base Doping
 
@@ -1627,28 +1516,18 @@ E = + \left( \frac{kT}{e} \right) \frac{1}{N_a} \frac{dN_a}{dx} \tag{12.52}
 \]
 
 According to the example of Figure 12.31, \( dN_a/dx \) is negative; hence, the induced electric field is in the negative \( x \) direction.
-```
 
-# 12.4 Nonideal Effects
-
-!Figure 12.31  
 **Figure 12.31** | Impurity concentration profiles of a double-diffused npn bipolar transistor.
 
 Electrons are injected from the n-type emitter into the base, and the minority carrier base electrons begin diffusing toward the collector region. The induced electric field in the base, because of the nonuniform doping, produces a force on the electrons in the direction toward the collector. The induced electric field, then, aids the flow of minority carriers across the base region. This electric field is called an **accelerating field**.
 
 The accelerating field will produce a drift component of current that is in addition to the existing diffusion current. Since the minority carrier electron concentration varies across the base, the drift current density will not be constant. The total current across the base, however, is nearly constant. The induced electric field in the base due to nonuniform base doping will alter the minority carrier distribution through the base so that the sum of drift current and diffusion current will be constant. Calculations have shown that the uniformly doped base theory is very useful for estimating the base characteristics.
 
-## 12.4.6 Breakdown Voltage
+### 12.4.6 Breakdown Voltage
 
 There are two breakdown mechanisms to consider in a bipolar transistor. The first is called punch-through. As the reverse-biased B–C voltage increases, the B–C space charge region widens and extends farther into the neutral base. It is possible for the B–C depletion region to penetrate completely through the base and reach the B–E space charge region, the effect called **punch-through**. Figure 12.32a shows the energy-band diagram of an npn bipolar transistor in thermal equilibrium, and Figure 12.32b shows the energy-band diagram for two values of reverse-biased B–C junction voltage. When a small C–B voltage, \(V_{CB}\), is applied, the B–E potential barrier is not affected; thus, the transistor current is still essentially zero. When a large reverse-biased voltage, \(V_{CB}\), is applied, the depletion region extends through the base region and the B–E potential barrier is lowered because of the C–B voltage. The lowering of the potential barrier at the B–E junction produces a large increase in current with a very small increase in C–B voltage. This effect is the punch-through breakdown phenomenon.
 
-# Chapter 12 The Bipolar Transistor
-
-!Energy-band diagram
-
 **Figure 12.32** | Energy-band diagram of an npn bipolar transistor (a) in thermal equilibrium, and (b) with a reverse-biased B–C voltage before punch-through, \(V_{R1}\), and after punch-through, \(V_{R2}\).
-
-!Geometry of a bipolar transistor
 
 **Figure 12.33** | Geometry of a bipolar transistor to calculate the punch-through voltage.
 
@@ -1668,15 +1547,13 @@ V_{pt} = \frac{e x_{B0}^2}{2 \varepsilon} \cdot \frac{N_B (N_C + N_B)}{N_C}
 
 (12.54)
 
-```markdown
-# 12.4 Nonideal Effects
-
-## Objective
+## DESIGN EXAMPLE 12.10
+**Objective**
 Design the collector doping concentration and collector width to meet a punch-through voltage specification.
 
 Consider a uniformly doped silicon bipolar transistor with a metallurgical base width of 0.5 μm and a base doping of \( N_B = 10^{16} \, \text{cm}^{-3} \). The punch-through voltage is to be \( V_{PT} = 25 \, \text{V} \).
 
-## Solution
+**Solution**
 The maximum collector doping concentration can be determined from Equation (12.54) as:
 
 \[
@@ -1701,10 +1578,10 @@ Using this n-type doping concentration for the collector, we can determine the m
 x_{sc} = x_c = 5.97 \, \mu\text{m}
 \]
 
-## Comment
+**Comment**
 From Figure 7.15, the expected avalanche breakdown voltage for this junction is greater than 300 V. Obviously punch-through will occur before the normal breakdown voltage in this case. For a larger punch-through voltage, a larger metallurgical base width will be required, since a lower collector doping concentration is becoming impractical. A larger punch-through voltage will also require a larger collector width in order to avoid premature breakdown in this region.
 
-## Exercise Problem
+**Exercise Problem**
 
 **Ex 12.10** The metallurgical base width of a silicon npn bipolar transistor is \( x_{BO} = 0.80 \, \mu\text{m} \).
 
@@ -1717,11 +1594,6 @@ The base and collector doping concentrations are \( N_B = 5 \times 10^{16} \, \t
 The second breakdown mechanism to consider is avalanche breakdown, but taking into account the gain of the transistor. Figure 12.34a is an npn transistor with a reverse-biased voltage applied to the B–C junction and with the emitter left open. The current \( I_{BCO} \) is the reverse-biased junction current. Figure 12.34b shows the transistor with an applied C–E voltage and with the base terminal left open. This bias
 
 *The doping concentrations in the base and collector of the transistor are small enough that Zener breakdown is not a factor to be considered.*
-```
-
-# Chapter 12: The Bipolar Transistor
-
-!Figure 12.34
 
 **Figure 12.34** (a) Open-emitter configuration with saturation current \( I_{CBO} \); (b) Open-base configuration with saturation current \( I_{CEO} \).
 
@@ -1771,9 +1643,8 @@ I_{CEO} = \frac{MI_{CBO}}{1 - \alpha M}
 
 (12.58)
 
-# 12.4 Nonideal Effects
+## 12.4 Nonideal Effects
 
-!Figure 12.35  
 **Figure 12.35** | Relative breakdown voltages and saturation currents of the open-base and open-emitter configurations.
 
 The condition for breakdown corresponds to
@@ -1826,17 +1697,14 @@ BV_{CEO} = \frac{BV_{CBO}}{\sqrt{\beta}}
 
 The breakdown voltage in the open-base configuration is smaller, by the factor \(\sqrt{\beta}\), than the actual avalanche junction breakdown voltage. This characteristic is shown in Figure 12.35.
 
-----
+## **Design Example 12.11**
 
 **Objective:** Design a bipolar transistor to meet a breakdown voltage specification.
 
-**Design Example 12.11**
-
 Consider a silicon bipolar transistor with a common-emitter current gain of \(\beta = 100\) and a base doping concentration of \(N_s = 10^{17} \text{ cm}^{-3}\). The minimum open-base breakdown voltage is to be 15 V.
 
-# Chapter 12: The Bipolar Transistor
 
-## Solution
+**Solution**
 
 From Equation (12.63), the minimum open-emitter junction breakdown voltage must be
 
@@ -1852,15 +1720,14 @@ BV_{ceo} = \sqrt{100}(15) = 69.6 \, \text{V}
 
 From Figure 7.15, the maximum collector doping concentration should be approximately \( 7 \times 10^{15} \, \text{cm}^{-3} \) to achieve this breakdown voltage.
 
-## Comment
+**Comment**
 
 In a transistor circuit, the transistor must be designed to operate under a worst-case situation. In this example, the transistor must be able to operate in an open-base configuration without going into breakdown. As we have determined previously, an increase in breakdown voltage can be achieved by decreasing the collector doping concentration.
 
-## Exercise Problem
+**Exercise Problem**
 
 **Ex 12.11** A uniformly doped silicon bipolar transistor has base and collector doping concentrations of \( N_B = 7 \times 10^{16} \, \text{cm}^{-3} \) and \( N_C = 3 \times 10^{15} \, \text{cm}^{-3} \), respectively. The common-emitter current gain is \( \beta = 125 \). Assuming an empirical constant of \( n = 3 \), determine (a) \( BV_{ceo} \) and (b) \( BV_{cbo} \).
 
-----
 
 ## Test Your Understanding
 
@@ -1872,19 +1739,16 @@ In a transistor circuit, the transistor must be designed to operate under a wors
 
 **TVU 12.10** The base impurity doping concentration is \( N_B = 3 \times 10^{16} \, \text{cm}^{-3} \) and the metallurgical base width is \( x_B = 0.70 \, \mu\text{m} \). The minimum required punch-through breakdown voltage is specified to be \( V_{PT} = 70 \, \text{V} \). What is the maximum allowed collector doping concentration?
 
-----
 
 ## 12.5 Equivalent Circuit Models
 
 In order to analyze a transistor circuit either by hand calculations or using computer codes, one needs a mathematical model, or equivalent circuit, of the transistor. There are several possible models, each one having certain advantages and disadvantages.
 
-# 12.5 Equivalent Circuit Models
-
 A detailed study of all possible models is beyond the scope of this chapter. However, we will consider three equivalent circuit models. Each of these follows directly from the work we have done on the pn junction diode and on the bipolar transistor. Computer analysis of electronic circuits is more commonly used than hand calculations, but it is instructive to consider the types of transistor model used in computer codes.
 
 It is useful to divide bipolar transistors into two categories—switching and amplification—defined by their use in electronic circuits. Switching usually involves turning a transistor from its “off” state, or cutoff, to its “on” state, either forward-active or saturation, and then back to its “off” state. Amplification usually involves superimposing sinusoidal signals on dc values so that bias voltages and currents are only perturbed. The **Ebers–Moll model** is used in switching applications; the **hybrid-pi model** is used in amplification applications.
 
-## 12.5.1 Ebers–Moll Model
+### 12.5.1 Ebers–Moll Model
 
 The Ebers–Moll model, or equivalent circuit, is one of the classic models of the bipolar transistor. This particular model is based on the interacting diode junctions and is applicable in any of the transistor operating modes. Figure 12.36 shows the current directions and voltage polarities used in the Ebers–Moll model. The currents are defined as all entering the terminals so that
 
@@ -1920,11 +1784,9 @@ I_F = I_{ES} \left[ \exp \left( \frac{V_{BE}}{kT} \right) - 1 \right]
 
 (12.66)
 
-!Figure 12.36
 
 **Figure 12.36** | Current direction and voltage polarity definitions for the Ebers–Moll model.
 
-# Chapter 12: The Bipolar Transistor
 
 If the B–C junction becomes forward biased, such as in saturation, then we can write the current \( I_R \) as
 
@@ -1970,11 +1832,7 @@ Figure 12.37 shows the equivalent circuit corresponding to Equations (12.68) and
 
 Since the Ebers–Moll model is valid in each of the four operating modes, we can, for example, use the model for the transistor in saturation. In the saturation mode, both B–E and B–C junctions are forward biased, so that \( V_{BE} > 0 \) and \( V_{BC} > 0 \). The B–E voltage will be a known parameter since we will apply a voltage across this junction. The forward-biased B–C voltage is a result of driving the transistor into saturation and is the unknown to be determined from the Ebers–Moll equations.
 
-!Figure 12.37
-
 **Figure 12.37** | Basic Ebers–Moll equivalent circuit.
-
-## 12.5 Equivalent Circuit Models
 
 Normally in electronic circuit applications, the collector–emitter voltage at saturation is of interest. We can define the C–E saturation voltage as
 
@@ -2026,11 +1884,9 @@ V_{CE(sat)} = V_T \ln \left[ \frac{I_C(1 - \alpha_R) + I_B - \frac{I_{CS}}{\alph
 
 (12.77)
 
-----
+## **Example 12.12**
 
 **Objective:** Calculate the collector–emitter saturation voltage of a bipolar transistor at \( T = 300 \, K \).
-
-**Example 12.12**
 
 Assume that \( \alpha_F = 0.99, \alpha_R = 0.20, I_C = 1 \, mA, \) and \( I_B = 50 \, \mu A \).
 
@@ -2046,13 +1902,11 @@ V_{CE(sat)} = (0.0259) \ln \left[ \frac{(1)(1 - 0.2) + (0.05)}{(0.99)(0.05) - (1
 
 This \( V_{CE(sat)} \) value is typical of collector–emitter saturation voltages. Because of the log function, \( V_{CE(sat)} \) is not a strong function of \( I_C \) or \( I_B \).
 
-# CHAPTER 12 The Bipolar Transistor
-
-## EXERCISE PROBLEM
+**Exercise Problem**
 
 **Ex 12.12** Repeat Example 12.12 for transistor parameters of \( \alpha_T = 0.992, \alpha_R = 0.05, I_C = 0.5 \, \text{mA}, \) and \( I_B = 50 \, \mu\text{A}. \)
 
-## 12.5.2 Gummel–Poon Model
+### 12.5.2 Gummel–Poon Model
 
 The Gummel–Poon model of the BJT considers more physics of the transistor than the Ebers–Moll model. This model can be used if, for example, there is a nonuniform doping concentration in the base.
 
@@ -2114,7 +1968,6 @@ J_n = -\frac{e D_n n_i^2 \exp(V_{BE}/V_T)}{\int_0^{x'} p(x) dx}
 
 (12.84)
 
-```markdown
 The integral in the denominator is the total majority carrier charge in the base and is known as the **base Gummel number**, defined as \( Q_B \).
 
 If we perform the same analysis in the emitter, we find that the hole current density in the emitter of an npn transistor can be expressed as
@@ -2135,26 +1988,20 @@ If the B–E voltage becomes too large, low injection no longer applies, which l
 
 The Gummel–Poon model can then be used to describe the basic operation of the transistor as well as to describe nonideal effects.
 
-## 12.5.3 Hybrid-Pi Model
+### 12.5.3 Hybrid-Pi Model
 
 Bipolar transistors are commonly used in circuits that amplify time-varying or sinusoidal signals. In these linear amplifier circuits, the transistor is biased in the forward-active region and small sinusoidal voltages and currents are superimposed on dc voltages and currents. In these applications, the sinusoidal parameters are of interest, so it is convenient to develop a small-signal equivalent circuit of the bipolar transistor using the small-signal admittance parameters of the pn junction developed in Chapter 8.
 
 Figure 12.38a shows an npn bipolar transistor in a common-emitter configuration with the small-signal terminal voltages and currents. Figure 12.38b shows the cross section of the npn transistor. The C, B, and E terminals are the external connections to the transistor, while the \( C' \), \( B' \), and \( E' \) points are the idealized internal collector, base, and emitter regions.
 
 We can begin constructing the equivalent circuit of the transistor by considering the various terminals individually. Figure 12.39a shows the equivalent circuit between the external input base terminal and the external emitter terminal. The resistance \( r_p \) is the series resistance in the base between the external base terminal B and the internal base region \( B' \). The \( B'–E' \) junction is forward biased, so \( C_{\pi} \) is
-```
 
-# Chapter 12: The Bipolar Transistor
-
-!Figure 12.38  
 **Figure 12.38** (a) Common-emitter npn bipolar transistor with small-signal current and voltages. (b) Cross section of an npn bipolar transistor for the hybrid-pi model.
 
 - **(a)** Diagram showing the common-emitter npn bipolar transistor with current \( I_c \), \( I_b \), and voltages \( V_{BE} \), \( V_{CE} \).
 - **(b)** Cross-sectional view of an npn bipolar transistor indicating the layers: p, n, n, p, and the buried layer.
 
-----
 
-!Figure 12.39  
 **Figure 12.39** Components of the hybrid-pi equivalent circuit between (a) the base and emitter, (b) the collector and emitter, and (c) the base and collector.
 
 - **(a)** Circuit diagram showing:
@@ -2172,14 +2019,9 @@ We can begin constructing the equivalent circuit of the transistor by considerin
   - Resistor \( r_{\mu} \).
   - Capacitor \( C_{\mu} \).
 
-----
 
 The junction diffusion capacitance and \( r_s \) is the junction diffusion resistance. The diffusion capacitance \( C_e \) is the same as the diffusion capacitance \( C_d \) given by Equation (8.105), and the diffusion resistance \( r_e \) is the same as the diffusion resistance \( r_d \) given by Equation (8.68). The values of both parameters are functions of the junction.
 
-```markdown
-### 12.5 Equivalent Circuit Models
-
-!Figure 12.40  
 **Figure 12.40** | Hybrid-pi equivalent circuit.
 
 current. These two elements are in parallel with the junction capacitance, which is \( C_{\pi} \). Finally, \( r_{ex} \) is the series resistance between the external emitter terminal and the internal emitter region. This resistance is usually very small and may be on the order of 1 to 2 \(\Omega\).
@@ -2190,22 +2032,15 @@ Finally, Figure 12.39c shows the equivalent circuit of the reverse-biased B'–C
 
 Figure 12.40 shows the complete hybrid-pi equivalent circuit. A computer simulation is usually required for this complete model because of the large number of elements. However, some simplifications can be made in order to gain an appreciation for the frequency effects of the bipolar transistor. The capacitances lead to frequency effects in the transistor, which means that the gain, for example, is a function of the input signal frequency.
 
-----
+## **Example 12.13**
 
 **Objective:** Determine, to a first approximation, the frequency at which the small-signal current gain decreases to \( 1/\sqrt{2} \) of its low-frequency value.
 
-**Example 12.13**
-
 Consider the simplified hybrid-pi circuit shown in Figure 12.41. We are ignoring \( C_s \), \( C_{\mu} \), \( r_{\mu} \), and the series resistances. We must emphasize that this is a first-order calculation and that \( C_{\pi} \) normally cannot be neglected.
-```
-
-# Chapter 12: The Bipolar Transistor
-
-!Simplified hybrid-pi equivalent circuit.
 
 **Figure 12.4.1** Simplified hybrid-pi equivalent circuit.
 
-## Solution
+**Solution**
 
 At very low frequency, we may neglect \( C_{\pi} \) so that
 
@@ -2257,19 +2092,19 @@ If, for example, \( r_{\pi} = 2.6 \, \text{k}\Omega \) and \( C_{\pi} = 4 \, \te
 f = 15.3 \, \text{MHz}
 \]
 
-## Comment
+**Comment**
 
 High-frequency transistors must have small-diffusion capacitances, implying the use of small devices.
 
-## Exercise Problem
+**Exercise Problem**
 
 **Ex 12.13** Using the results of Example 12.13, determine the maximum value of \( C_{\pi} \) such that the frequency at which \( |A_i| = h_{fe0}/\sqrt{2} \) is \( f = 35 \, \text{MHz} \).
 
-# 12.6 Frequency Limitations
+## 12.6 Frequency Limitations
 
 The hybrid-pi equivalent circuit, developed in the last section, introduces frequency effects through the capacitor–resistor circuits. We now discuss the various physical factors in the bipolar transistor affecting the frequency limitations of the device and then define the transistor cutoff frequency, which is a figure of merit for a transistor.
 
-## 12.6.1 Time-Delay Factors
+### 12.6.1 Time-Delay Factors
 
 The bipolar transistor is a transit-time device. When the voltage across the B–E junction increases, for example, additional carriers from the emitter are injected into the base, diffuse across the base, and are collected in the collector region. As the frequency increases, this transit time can become comparable to the period of the input signal. At this point, the output response will no longer be in phase with the input and the magnitude of the current gain will decrease.
 
@@ -2323,7 +2158,6 @@ v(x) = dx/dt \quad \text{or} \quad dt = dx/v(x)
 
 (12.90)
 
-# Chapter 12: The Bipolar Transistor
 
 The transit time can then be found by integrating, or
 
@@ -2379,7 +2213,7 @@ where \(C_{jc}\) is the B–C junction capacitance and \(C_s\) is the collector-
 
 Example calculations of the various time-delay factors are given in the next section as part of the cutoff frequency discussion.
 
-## 12.6.2 Transistor Cutoff Frequency
+### 12.6.2 Transistor Cutoff Frequency
 
 The current gain as a function of frequency is developed in Example 12.13 so that we can also write the common-base current gain as
 
@@ -2388,8 +2222,6 @@ The current gain as a function of frequency is developed in Example 12.13 so tha
 \]
 
 (12.97)
-
-### 12.6 Frequency Limitations
 
 where \( \alpha_0 \) is the low-frequency common-base current gain and \( f_{\alpha} \) is defined as the **alpha cutoff frequency**. The frequency \( f_{\alpha} \) is related to the emitter-to-collector time delay \( \tau_{ec} \) as
 
@@ -2457,10 +2289,6 @@ where
 \beta_0 = \frac{\alpha_0}{1-\alpha_0} \approx \frac{1}{1-\alpha_0}
 \]
 
-# CHAPTER 12 The Bipolar Transistor
-
-!Bode plot
-
 **Figure 12.42** Bode plot of common-emitter current gain versus frequency.
 
 Comparing Equations (12.104) and (12.102), the beta cutoff frequency is related to the cutoff frequency by
@@ -2473,7 +2301,6 @@ f_{\beta} = \frac{f_T}{\beta_0}
 
 Figure 12.42 shows a Bode plot of the common-emitter current gain as a function of frequency and shows the relative values of the beta and cutoff frequencies. Keep in mind that the frequency is plotted on a log scale, so \( f_{\beta} \) and \( f_T \) usually have significantly different values.
 
-----
 
 ## EXAMPLE 12.14
 
@@ -2490,7 +2317,7 @@ Consider a silicon npn transistor at \( T = 300 \, K \). Assume the following pa
 - \( r_e = 20 \, \Omega \)
 - \( C_c = 0.1 \, \text{pF} \)
 
-### Solution
+**Solution**
 
 We will initially calculate the various time-delay factors. If we neglect the parasitic capacitance, the emitter–base junction charging time is
 
@@ -2515,8 +2342,6 @@ The base transit time is
 \[
 \tau_B = \frac{x_B^2}{2D_n} = \frac{(0.5 \times 10^{-4})^2}{2(25)} = 50 \, \text{ps}
 \]
-
-```markdown
 The collector depletion region transit time is
 
 \[
@@ -2547,13 +2372,9 @@ If we assume a low-frequency common-emitter current gain of \(\beta = 100\), the
 f_{\beta} = \frac{f_T}{\beta_0} = \frac{1.53 \times 10^9}{100} = 15.3 \, \text{MHz}
 \]
 
-----
-
 **Comment**
 
 The design of high-frequency transistors requires small device geometries in order to reduce capacitances, and narrow base widths in order to reduce the base transit time.
-
-----
 
 **EXERCISE PROBLEM**
 
@@ -2564,8 +2385,6 @@ Consider a bipolar transistor with the same parameters as described in Example 1
 (2\text{H} \, \text{V} \, 9\text{S} = 4 \, \text{H} \, \text{V} \, 9\text{S} = 4 \, \text{S} \, \text{d} \, \text{t} \, 8\text{Z} = 2\text{L} \, \text{S} \, \text{V})
 \]
 
-----
-
 ## 12.7 LARGE-SIGNAL SWITCHING
 
 Switching a transistor from one state to another is strongly related to the frequency characteristics just discussed. However, switching is considered to be a large-signal change, whereas the frequency effects assumed only small changes in the magnitude of the signal.
@@ -2575,11 +2394,6 @@ Switching a transistor from one state to another is strongly related to the freq
 Consider an npn transistor in the circuit shown in Figure 12.43a switching from cutoff to saturation, and then switching back from saturation to cutoff. We describe the physical processes taking place in the transistor during the switching cycle.
 
 Consider, initially, the case of switching from cutoff to saturation. Assume that in cutoff \(V_{BE} = V_{BB} < 0\), thus the B–E junction is reverse biased. At \(t = 0\), assume that \(V_{BB}\) switches to a value of \(V_{BB0}\) as shown in Figure 12.43b. We assume that \(V_{BB0}\) is sufficiently positive to eventually drive the transistor into saturation. For \(0 \leq t \leq t_1\), the base current supplies charge to bring the B–E junction from reverse bias to a slight forward bias. The space charge width of the B–E junction is narrowing, and ionized donors and acceptors are being neutralized. A small amount of charge is also...
-```
-
-# CHAPTER 12 The Bipolar Transistor
-
-!Circuit Diagrams
 
 **Figure 12.43** (a) Circuit used for transistor switching. (b) Input base drive for transistor switching. (c) Collector current versus time during transistor switching.
 
@@ -2589,9 +2403,6 @@ During the next time period, \( t_1 \leq t \leq t_2 \), the base current is supp
 
 The switching of the transistor from saturation to cutoff involves removing all of the excess minority carriers stored in the emitter, base, and collector regions. Figure 12.44 shows the charge storage in the base and collector when the transistor is in saturation. The charge \( Q_B \) is the excess charge stored in a forward-active transistor, and \( Q_{BX} \) and \( Q_C \) are the extra charges stored when the transistor is biased in saturation. At \( t = t_3 \), the base voltage \( V_{BB} \) switches to a negative value of \( -V_{RX} \). The base current in the transistor reverses direction as was the case in switching a pn junction diode from forward to reverse bias. The reverse base current pulls the excess stored carriers from the emitter and base regions. Initially, the collector current does not change significantly, since the gradient of the minority carrier concentration in the base does not.
 
-# 12.7 Large-Signal Switching
-
-!Figure 12.44  
 **Figure 12.44** | Charge storage in the base and collector at saturation and in the active mode.
 
 Change instantaneously. Recall that when the transistor is biased in saturation, both the B–E and B–C junctions are forward biased. The charge \( Q_{BX} \) in the base must be removed to reduce the forward-biased B–C voltage to 0 V before the collector current can change. This time delay is called the **storage time** and is denoted by \( t_s \). The storage time is the time between the point at which \( V_{BE} \) switches to the time when the collector current is reduced to 90 percent of its maximum saturation value. The storage time is usually the most important parameter in the switching speed of the bipolar transistor.
@@ -2600,15 +2411,12 @@ The final switching delay time is the **fall time** \( t_f \) during which the c
 
 The switching-time response of the transistor can be determined by using the Ebers–Moll model. The frequency-dependent gain parameters must be used, and normally the Laplace transform technique is used to obtain the time response. The details of this analysis are quite tedious and are presented here.
 
-## 12.7.2 The Schottky-Clamped Transistor
+### 12.7.2 The Schottky-Clamped Transistor
 
 One method frequently employed to reduce the storage time and increase the switching speed is the use of a Schottky-clamped transistor. This is a normal npn bipolar device with a Schottky diode connected between base and collector, as shown in Figure 12.45a. The circuit symbol for the Schottky-clamped transistor is shown in Figure 12.45b. When the transistor is biased in the forward-active mode, the B–C junction is reverse biased; hence, the Schottky diode is reverse biased and effectively out of the circuit. The characteristics of the Schottky-clamped transistor—or simply the Schottky transistor—are those of the normal npn bipolar device.
 
 When the transistor is driven into saturation, the B–C junction becomes forward biased; hence, the Schottky diode also becomes forward biased. We may recall from our discussion in Chapter 9 that the effective turn-on voltage of the Schottky diode is approximately half that of the pn junction. The difference in turn-on voltage means that most of the excess base current is shunted through the Schottky diode and away from the B–C junction.
 
-# Chapter 12 The Bipolar Transistor
-
-!Figure 12.45  
 (a) The Schottky-clamped transistor. (b) Circuit symbol of the Schottky-clamped transistor.
 
 from the base so that the amount of excess stored charge in the base and collector is drastically reduced. The excess minority carrier concentration in the base and collector at the B–C junction is an exponential function of \( V_{BC} \). If \( V_{BC} \) is reduced from 0.5 to 0.3 V, for example, the excess minority carrier concentration is reduced by over three orders of magnitude. The reduced excess stored charge in the base of the Schottky transistor greatly reduces the storage time—storage times on the order of 1 ns or less are common in Schottky transistors.
@@ -2622,10 +2430,6 @@ This section is intended to briefly introduce three specialized bipolar transist
 The emitter injection efficiency is degraded by the carriers injected from the base back into the emitter. The emitter width, in general, is thin, which increases speed and reduces parasitic resistance. However, a thin emitter increases the gradient in the minority carrier concentration, as indicated in Figure 12.19. The increase in the gradient increases the B–E junction current, which in turn decreases the emitter injection efficiency and decreases the common-emitter current gain. This effect is also shown in the summary of Table 12.3.
 
 Figure 12.46 shows the idealized cross section of an npn bipolar transistor with a polysilicon emitter. As shown in the figure, there is a very thin \( n^+ \) single-crystal silicon region between the p-type base and the n-type polysilicon. As a first approximation to the analysis, we may treat the polysilicon portion of the emitter as low-mobility silicon, which means that the corresponding diffusion coefficient is small.
-
-# 12.8 Other Bipolar Transistor Structures
-
-!Simplified cross section of an npn polysilicon emitter BJT.
 
 **Figure 12.46** | Simplified cross section of an npn polysilicon emitter BJT.
 
@@ -2651,17 +2455,16 @@ Since \( D_{E(\text{poly})} < D_{E(\text{cr})} \), then the gradient of the mino
 
 **Figure 12.47** | Excess minority carrier hole concentrations in \( n^+ \) polysilicon and \( n^+ \) silicon emitter.
 
-# 12.8.2 Silicon–Germanium Base Transistor
+### 12.8.2 Silicon–Germanium Base Transistor
 
 The bandgap energy of germanium (Ge) (~0.67 eV) is significantly smaller than the bandgap energy of silicon (Si) (~1.12 eV). By incorporating Ge into Si, the bandgap energy will decrease compared to pure Si. If Ge is incorporated into the base region of a Si bipolar transistor, the decrease in bandgap energy will influence the device characteristics. The desired Ge concentration profile is to have the largest amount of Ge near the base–collector junction and the least amount of Ge near the base–emitter junction. Figure 12.48a shows an ideal uniform boron doping concentration in the p-type base and a linear Ge concentration profile.
 
 The energy bands of a SiGe-base npn transistor compared to a Si-base npn transistor, assuming the boron and Ge concentration given in Figure 12.48a, are shown in Figure 12.48b. The emitter–base junctions of the two transistors are essentially identical, since the Ge concentration is very small in this region. However, the bandgap energy of the SiGe-base transistor near the base–collector junction is smaller than that of the Si-base transistor. The base current is determined by the base–emitter junction parameters and hence will be essentially the same in the two transistors. This change in bandgap energy will influence the collector current.
 
-!Figure 12.48
 
 **Figure 12.48** | (a) Assumed boron and germanium concentrations in the base of the SiGe-base transistor. (b) Energy-band diagram of the Si- and SiGe-base transistors.
 
-# Collector Current and Current Gain Effects
+#### Collector Current and Current Gain Effects
 
 Figure 12.49 shows the thermal-equilibrium minority carrier electron concentration through the base region of the SiGe and Si transistors. This concentration is given by
 
@@ -2683,18 +2486,13 @@ where \( n_i(\text{SiGe}) \) is the intrinsic carrier concentration in the SiGe 
 
 The collector current in a SiGe-base transistor will increase. As a first approximation, we can see this from the previous analysis. The collector current is found from Equation (12.36a), in which the derivative is evaluated at the base–collector junction. This means that the value of \( n_{bo} \) in the collector current expression in Equation (12.37) is made at the base–collector junction. Since this value is larger for the SiGe-base transistor (Figure 12.49), the collector current will be larger compared to the Si-base transistor. Since the base currents are the same in the two transistors, the increase in collector current then implies that the current gain in the SiGe-base transistor is larger. If the bandgap narrowing is 100 meV, then the increase in the collector current and current gain will be approximately a factor of 4.
 
-# Early Voltage Effects
+#### Early Voltage Effects
 
 The Early voltage in a SiGe-base transistor is larger than that of the Si-base transistor. The explanation for this effect is less obvious than the explanation for the increase in collector current and current gain. For a bandgap narrowing of 100 meV, the Early voltage is increased by approximately a factor of 12. Incorporating Ge into the base region can increase the Early voltage by a large factor.
 
-----
-
-!Figure 12.49
-
 **Figure 12.49** | Thermal-equilibrium minority carrier electron concentration through the base of the Si- and SiGe-base transistors.
 
-```markdown
-# Base Transit Time and Emitter–Base Charging Time Effects
+#### Base Transit Time and Emitter–Base Charging Time Effects
 
 The decrease in bandgap energy from the base–emitter junction to the base–collector junction induces an electric field in the base that helps accelerate electrons across the p-type base region. For a bandgap narrowing of 100 meV, the induced electric field can be on the order of \(10^3\) to \(10^4\) V/cm. This electric field reduces the base transit time by approximately a factor of 2.5.
 
@@ -2702,7 +2500,7 @@ The emitter–base junction charging time constant, given by Equation (12.87), i
 
 The reduction in both the base transit time and the emitter–base charging time increases the cutoff frequency of the SiGe-base transistor. The cutoff frequency of these devices can be substantially higher than that of the Si-base device.
 
-## 12.8.3 Heterojunction Bipolar Transistors
+### 12.8.3 Heterojunction Bipolar Transistors
 
 As mentioned previously, one of the basic limitations of the current gain in the bipolar transistor is the emitter injection efficiency. The emitter injection efficiency \(\gamma\) can be increased by reducing the value of the thermal-equilibrium minority carrier concentration \(p_{en}\) in the emitter. However, as the emitter doping increases, the bandgap narrowing effect offsets any improvement in the emitter injection efficiency. One possible solution is to use a wide-bandgap material for the emitter, which will minimize the injection of carriers from the base back into the emitter.
 
@@ -2723,11 +2521,6 @@ For a given emitter doping, the number of minority carrier holes injected into t
 in changing from a narrow- to wide-bandgap emitter. If \(\Delta E_g = 0.30 \, \text{eV}\), for example, \(n_i^2\) would be reduced by approximately \(10^5\) at \(T = 300 \, \text{K}\). The drastic reduction in \(n_i^2\) for the wide-bandgap emitter means that the requirements of a very high emitter doping can be relaxed and a high emitter injection efficiency can still be obtained. A lower emitter doping reduces the bandgap narrowing effect.
 
 The heterojunction GaAs bipolar transistor has the potential of being a very high-frequency device. A lower emitter doping in the wide-bandgap emitter leads to
-```
-
-# 12.8 Other Bipolar Transistor Structures
-
-!Cross section of AlGaAs/GaAs heterojunction bipolar transistor
 
 **Figure 12.50** (a) Cross section of AlGaAs/GaAs heterojunction bipolar transistor showing a discrete and integrated structure. (b) Energy-band diagram of the n-AlGaAs emitter and p-GaAs base junction. *(From Tiwari et al. [20].)*
 
@@ -2735,7 +2528,7 @@ A smaller junction capacitance increases the speed of the device. Also, for the 
 
 One disadvantage of GaAs is the low minority carrier lifetime. The small lifetime is not a factor in the base of a narrow-base device, but results in a larger B–E recombination current, which decreases the recombination factor and reduces the current gain. A current gain of 150 has been reported.
 
-# 12.9 | SUMMARY
+## 12.9 | SUMMARY
 
 - There are two complementary bipolar transistors—npn and pnp. Each transistor has three separately doped regions and two pn junctions. The center region (base) is very narrow, so the two pn junctions are said to be interacting junctions.
 
@@ -2761,7 +2554,7 @@ One disadvantage of GaAs is the low minority carrier lifetime. The small lifetim
 
 - The switching characteristics are closely related to the frequency limitations although switching involves large changes in currents and voltages. An important parameter in switching is the charge storage time, which applies to a transistor switching from saturation to cutoff.
 
-# Glossary of Important Terms
+## Glossary of Important Terms
 
 **alpha cutoff frequency**  
 The frequency at which the magnitude of the common-base current is \(1/\sqrt{2}\) of its low-frequency value; also equal to the cutoff frequency.
@@ -2823,16 +2616,13 @@ The bias condition in which the B–E junction is reverse biased and the B–C j
 **output conductance**  
 The ratio of a differential change in collector current to the corresponding differential change in C–E voltage.
 
-# Checkpoint
+## Checkpoint
 
 After studying this chapter, the reader should have the ability to:
 
 - Describe the basic operation of the transistor.
 - Sketch the energy bands of the transistor in thermal equilibrium and when biased in the various operating modes.
 - Calculate, to a good first approximation, the collector current as a function of base–emitter voltage.
-
-# Chapter 12: The Bipolar Transistor
-
 - Sketch the minority carrier concentrations throughout the transistor under the various operating modes.
 - Define the various diffusion and other current components in the transistor from the minority carrier distribution curves.
 - Explain the physical mechanisms of the current gain limiting factors.
@@ -2857,12 +2647,3 @@ After studying this chapter, the reader should have the ability to:
 11. Describe the time-delay factors in the frequency limitation of the bipolar transistor.
 12. What is the cutoff frequency of a bipolar transistor?
 13. Describe the response of a bipolar transistor when it is switching between saturation and cutoff.
-
-## Problems
-
-(Note: In the following problems, use the transistor geometry shown in Figure 12.13. Assume \( T = 300 \, \text{K} \) unless otherwise stated.)
-
-### Section 12.1 The Bipolar Transistor Action
-
-12.1 For a uniformly doped \( n^+ p n \) bipolar transistor in thermal equilibrium, (a) sketch the energy-band diagram, (b) sketch the electric field through the device, and (c) repeat parts (a) and (b) for the transistor biased in the forward-active region.
-
